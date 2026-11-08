@@ -10,11 +10,28 @@ from knobeln.llm.mapping import build_neue_bogen, gruppe_from_llm
 from knobeln.llm.models import BogenLLM, SpielerLLM
 
 CSV_FIELDS = [
-    "Bogen_ID", "Quelle", "Seite", "Spieler_Position", "Durchgang_Nr",
-    "Spieler_Nr", "Spieler_Name", "Wurf_Nr", "Punkte", "Punkte_Roh",
-    "Korrektur", "Summe_Bogen_Roh", "Summe_Bogen", "Summe_Berechnet",
-    "Delta", "Status", "Warnung", "Konflikt", "Konflikt_Detail",
-    "Namenskonflikt", "Geprueft", "Kommentar",
+    "Bogen_ID",
+    "Quelle",
+    "Seite",
+    "Spieler_Position",
+    "Durchgang_Nr",
+    "Spieler_Nr",
+    "Spieler_Name",
+    "Wurf_Nr",
+    "Punkte",
+    "Punkte_Roh",
+    "Korrektur",
+    "Summe_Bogen_Roh",
+    "Summe_Bogen",
+    "Summe_Berechnet",
+    "Delta",
+    "Status",
+    "Warnung",
+    "Konflikt",
+    "Konflikt_Detail",
+    "Namenskonflikt",
+    "Geprueft",
+    "Kommentar",
 ]
 
 

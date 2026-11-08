@@ -28,7 +28,7 @@ def image_to_jpeg(data: bytes) -> bytes:
                 max(1, int(image.width * ratio)),
                 max(1, int(image.height * ratio)),
             )
-            image = image.resize(new_size, Image.LANCZOS)
+            image = image.resize(new_size, Image.Resampling.LANCZOS)
 
         buffer = io.BytesIO()
         image.save(buffer, format="JPEG", quality=JPEG_QUALITY, optimize=True)
@@ -45,7 +45,8 @@ def render_pdf_page(data: bytes, page_number: int, dpi: int = 300) -> bytes:
     with pdfium.PdfDocument(data) as pdf:
         page = pdf[page_number - 1]
         try:
-            bitmap = page.render(scale=dpi / 72)
+            # pypdfium2 akzeptiert float; die Stubs deklarieren int.
+            bitmap = page.render(scale=dpi / 72)  # pyright: ignore[reportArgumentType]
             image = bitmap.to_pil().convert("RGB")
             if max(image.size) > MAX_LONG_SIDE:
                 ratio = MAX_LONG_SIDE / max(image.size)
@@ -53,7 +54,7 @@ def render_pdf_page(data: bytes, page_number: int, dpi: int = 300) -> bytes:
                     max(1, int(image.width * ratio)),
                     max(1, int(image.height * ratio)),
                 )
-                image = image.resize(new_size, Image.LANCZOS)
+                image = image.resize(new_size, Image.Resampling.LANCZOS)
             buffer = io.BytesIO()
             image.save(
                 buffer,
@@ -64,6 +65,3 @@ def render_pdf_page(data: bytes, page_number: int, dpi: int = 300) -> bytes:
             return buffer.getvalue()
         finally:
             page.close()
-
-
-

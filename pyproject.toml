@@ -14,7 +14,13 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8.3"]
+dev = [
+    "detect-secrets>=1.5.0",
+    "pre-commit>=4.7.0",
+    "pyright>=1.1.414",
+    "pytest>=8.3",
+    "ruff>=0.17.4",
+]
 
 [project.scripts]
 knobeln = "knobeln.cli:app"
@@ -29,3 +35,16 @@ packages = ["src/knobeln"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+    "manual: requires a real OPENROUTER_API_KEY and costs money; run with --run-manual",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/knobeln/cli.py" = ["B008"]

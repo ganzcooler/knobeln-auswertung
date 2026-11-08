@@ -5,7 +5,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-
 from conftest import FAKE_RESPONSES
 
 from knobeln.llm.cache import LLMCache
@@ -97,7 +96,8 @@ def test_request_und_cache(monkeypatch, tmp_path: Path):
     assert call["response_format"]["type"] == "json_schema"
     assert call["extra_body"]["reasoning"]["effort"] == "max"
     assert call["extra_body"]["reasoning"]["exclude"] is True
-    assert "data:image/jpeg;base64," in call["messages"][1]["content"][1]["image_url"]["url"]
+    image_url = call["messages"][1]["content"][1]["image_url"]["url"]
+    assert "data:image/jpeg;base64," in image_url
 
     # Cache-Hit: neuer Client, gleicher Cache, kein zweiter API-Aufruf.
     client2, api2 = _client(monkeypatch, tmp_path, [])

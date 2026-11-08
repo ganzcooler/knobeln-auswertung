@@ -2,9 +2,9 @@ from conftest import FAKE_RESPONSES
 
 from knobeln.domain.merge import merge_gruppen
 from knobeln.domain.models import BogenRef, Gruppe
+from knobeln.domain.validation import apply_identity_checks
 from knobeln.llm.mapping import gruppe_from_llm
 from knobeln.llm.models import SpielerLLM
-from knobeln.domain.validation import apply_identity_checks
 
 
 def _gruppe(

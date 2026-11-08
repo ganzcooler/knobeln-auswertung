@@ -52,6 +52,7 @@ Wichtige Optionen:
 --keep-input        Eingang nicht aufräumen (Debugging)
 --dry-run           Nicht schreiben und nicht aufräumen
 --backup            Vor dem Schreiben auswertung.csv.bak anlegen
+--max-cost USD      Kostenlimit pro Lauf (bricht vor dem CSV-Schreiben ab)
 --verbose           Ausführliche Ausgabe
 --version           Version anzeigen
 ```
@@ -152,12 +153,22 @@ Auswertung keine Rolle.
 ## Entwicklung
 
 ```bash
-uv run pytest
+uv sync --group dev
+uv run pre-commit install
+
+./scripts/check.sh       # Ruff, Format, Pyright, Pytest
+./scripts/doctor.sh      # uv, .env, Git-Remote, Scratch-Verzeichnis
 ```
 
 Die Tests nutzen einen Fake-LLM-Client und die Beispiele aus `examples/`.
-Der echte Modell-Smoke-Test läuft erst, wenn `OPENROUTER_API_KEY` in `.env`
-liegt.
+Der echte Modell-Smoke-Test ist kostenpflichtig und läuft nur manuell:
+
+```bash
+./scripts/smoke_test.sh        # drei Beispiele + Golden-Vergleich
+uv run pytest --run-manual     # derselbe Test über Pytest
+```
+
+CI führt `pre-commit run --all-files` aus; der echte Modelltest läuft nie in CI.
 
 ## Dokumentation
 

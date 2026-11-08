@@ -44,8 +44,4 @@ SUMME_SCHRITT = 5
 
 
 def ist_gueltige_summe(wert: int | None) -> bool:
-    return (
-        wert is not None
-        and 0 <= wert <= MAX_SUMME
-        and wert % SUMME_SCHRITT == 0
-    )
+    return wert is not None and 0 <= wert <= MAX_SUMME and wert % SUMME_SCHRITT == 0

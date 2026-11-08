@@ -22,12 +22,14 @@ Die CSV ist Ausgabe **und** Zustand: `Punkte` ist die Pivot-Spalte, `Summe_Bogen
 **After:**
 
 ```text
-$ uv run pytest -q
-57 passed
-
-$ uv tool run ruff check --select F401,F821,F841 src tests
-All checks passed
+$ ./scripts/check.sh
+All checks passed!
+33 files already formatted
+0 errors, 0 warnings, 0 informations
+58 passed, 1 skipped
 ```
+
+Guardrails: pre-commit (Ruff, Ruff-Format, Pyright, Pytest, detect-secrets) und GitHub Actions. Der echte Modelltest ist `--run-manual`/`scripts/smoke_test.sh` und läuft nie in CI. `--max-cost` bricht vor dem CSV-Schreiben ab.
 
 Echter Smoke-Test mit den drei Beispieldateien:
 

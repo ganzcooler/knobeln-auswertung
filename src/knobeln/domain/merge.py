@@ -176,7 +176,10 @@ def _mark_conflict(gruppe: Gruppe, detail: str, art: str) -> None:
 
 def _diff_detail(existing: Gruppe, incoming: Gruppe) -> str:
     parts: list[str] = []
-    for i, (alt, neu) in enumerate(zip(existing.punkte, incoming.punkte), start=1):
+    for i, (alt, neu) in enumerate(
+        zip(existing.punkte, incoming.punkte, strict=True),
+        start=1,
+    ):
         if alt != neu:
             parts.append(
                 f"W{i:02d}: bestehend {alt if alt is not None else 'leer'}, "
@@ -186,7 +189,8 @@ def _diff_detail(existing: Gruppe, incoming: Gruppe) -> str:
         parts.append(
             "Summe: bestehend "
             f"{existing.summe_bogen if existing.summe_bogen is not None else 'leer'}, "
-            f"neu {incoming.summe_bogen if incoming.summe_bogen is not None else 'leer'}"
+            "neu "
+            f"{incoming.summe_bogen if incoming.summe_bogen is not None else 'leer'}"
         )
     if not parts:
         parts.append("abweichende Werte")

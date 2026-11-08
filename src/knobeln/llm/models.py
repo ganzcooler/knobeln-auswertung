@@ -32,19 +32,16 @@ class SpielerLLM(BaseModel):
     summe_bogen: SummeLLM = Field(default_factory=SummeLLM)
 
     @model_validator(mode="after")
-    def _validate_wurf_zeilen(self) -> "SpielerLLM":
+    def _validate_wurf_zeilen(self) -> SpielerLLM:
         if not self.wurf_zeilen:
             return self
         if len(self.wurf_zeilen) != 12:
             raise ValueError(
-                "wurf_zeilen muss entweder leer oder genau zwölf Einträge "
-                "enthalten"
+                "wurf_zeilen muss entweder leer oder genau zwölf Einträge enthalten"
             )
         nummern = sorted(w.wurf_nr for w in self.wurf_zeilen)
         if nummern != list(range(1, 13)):
-            raise ValueError(
-                "wurf_zeilen muss Wurf-Nr. 1–12 genau einmal enthalten"
-            )
+            raise ValueError("wurf_zeilen muss Wurf-Nr. 1–12 genau einmal enthalten")
         return self
 
 
@@ -57,7 +54,7 @@ class BogenLLM(BaseModel):
     spieler: list[SpielerLLM] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def _validate_spieler(self) -> "BogenLLM":
+    def _validate_spieler(self) -> BogenLLM:
         if not self.spieler:
             if self.bogen_unklar:
                 return self
@@ -71,7 +68,5 @@ class BogenLLM(BaseModel):
             )
         positionen = sorted(p.position for p in self.spieler)
         if positionen != [1, 2, 3, 4]:
-            raise ValueError(
-                "spieler muss die Positionen 1–4 genau einmal enthalten"
-            )
+            raise ValueError("spieler muss die Positionen 1–4 genau einmal enthalten")
         return self

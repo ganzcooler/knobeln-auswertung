@@ -3,9 +3,9 @@ from pathlib import Path
 from conftest import FAKE_RESPONSES
 
 from knobeln.domain.models import BogenRef, Gruppe
+from knobeln.io.csv_store import load_groups, read_rows, write_groups
 from knobeln.llm.mapping import gruppe_from_llm
 from knobeln.llm.models import SpielerLLM
-from knobeln.io.csv_store import load_groups, read_rows, write_groups
 
 
 def _gruppe(name: str, position: int) -> Gruppe:

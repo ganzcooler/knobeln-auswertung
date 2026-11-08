@@ -5,14 +5,13 @@ import shutil
 from pathlib import Path
 
 import pytest
-
 from conftest import FAKE_RESPONSES, FakeLLMClient, write_test_image
 from PIL import Image
 
 from knobeln.config import Config
-from knobeln.llm.models import BogenLLM
 from knobeln.io.csv_store import CSVWriteError, load_groups, read_rows, write_groups
 from knobeln.llm.client import LLMResult
+from knobeln.llm.models import BogenLLM
 from knobeln.pipeline import Pipeline, PipelineError
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
@@ -138,6 +137,17 @@ def test_keep_input_verhindert_review_move(tmp_path: Path):
     assert summary.kept == 1
     assert (tmp_path / "input" / "img1-kopie.jpg").exists()
     assert not (tmp_path / "review" / "img1-kopie.jpg").exists()
+
+
+def test_kostenlimit_bricht_vor_dem_schreiben_ab(tmp_path: Path):
+    _copy_examples(tmp_path / "input", ["img1.jpg"])
+    config = _config(tmp_path, max_cost=0.0005)
+
+    with pytest.raises(PipelineError, match="Kostenlimit"):
+        Pipeline(config, FakeLLMClient()).run()
+
+    assert (tmp_path / "input" / "img1.jpg").exists()
+    assert not config.output_csv.exists()
 
 
 def test_technischer_fehler_bleibt_im_eingang(tmp_path: Path):
@@ -271,9 +281,7 @@ def test_reset_archiviert_alte_csv(tmp_path: Path):
     assert rows == []
 
 
-def test_csv_schreibfehler_laesst_eingang_unangetastet(
-    tmp_path: Path, monkeypatch
-):
+def test_csv_schreibfehler_laesst_eingang_unangetastet(tmp_path: Path, monkeypatch):
     _copy_examples(tmp_path / "input", ["img1.jpg"])
     config = _config(tmp_path)
 

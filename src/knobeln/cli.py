@@ -32,24 +32,18 @@ def run(
     review_dir: Path | None = typer.Option(
         None, "--review", help="Review-Ordner (Default: review)"
     ),
-    model: str | None = typer.Option(
-        None, "--model", help="OpenRouter-Modell"
-    ),
+    model: str | None = typer.Option(None, "--model", help="OpenRouter-Modell"),
     reasoning: str | None = typer.Option(
         None, "--reasoning", help="Reasoning-Effort (Default: max)"
     ),
     reset: bool = typer.Option(
         False, "--reset", help="Neue Veranstaltung: bestehende CSV archivieren"
     ),
-    yes: bool = typer.Option(
-        False, "--yes", help="Rückfragen automatisch bestätigen"
-    ),
+    yes: bool = typer.Option(False, "--yes", help="Rückfragen automatisch bestätigen"),
     reprocess: bool = typer.Option(
         False, "--reprocess", help="Bekannte Bogen_IDs erneut lesen"
     ),
-    no_cache: bool = typer.Option(
-        False, "--no-cache", help="LLM-Cache umgehen"
-    ),
+    no_cache: bool = typer.Option(False, "--no-cache", help="LLM-Cache umgehen"),
     keep_input: bool = typer.Option(
         False, "--keep-input", help="Eingang nicht aufräumen"
     ),
@@ -59,21 +53,20 @@ def run(
     backup: bool = typer.Option(
         False, "--backup", help="Vor dem Schreiben eine .bak-Kopie anlegen"
     ),
-    verbose: bool = typer.Option(
-        False, "--verbose", help="Ausführliche Ausgabe"
+    max_cost: float | None = typer.Option(
+        None,
+        "--max-cost",
+        help="Kostenlimit in USD pro Lauf; bricht vor dem CSV-Schreiben ab",
     ),
-    version: bool = typer.Option(
-        False, "--version", help="Version anzeigen"
-    ),
+    verbose: bool = typer.Option(False, "--verbose", help="Ausführliche Ausgabe"),
+    version: bool = typer.Option(False, "--version", help="Version anzeigen"),
 ) -> None:
     if version:
         console.print(f"knobeln-auswertung {__version__}")
         raise typer.Exit()
 
     if reset and not yes:
-        if not typer.confirm(
-            "Bestehende CSV wirklich archivieren und neu beginnen?"
-        ):
+        if not typer.confirm("Bestehende CSV wirklich archivieren und neu beginnen?"):
             reset = False
 
     try:
@@ -90,6 +83,7 @@ def run(
             dry_run=dry_run,
             verbose=verbose,
             backup=backup,
+            max_cost=max_cost,
         )
         api_key = config.require_api_key()
     except ConfigError as exc:
@@ -131,8 +125,7 @@ def _print_summary(summary: RunSummary, config) -> None:
         f"Konflikte: {summary.conflicts}"
     )
     console.print(
-        f"Offene Prüfpunkte: {summary.open_groups}; "
-        f"unleserlich: {summary.unreadable}"
+        f"Offene Prüfpunkte: {summary.open_groups}; unleserlich: {summary.unreadable}"
     )
     console.print(
         f"Eingang: {summary.deleted} gelöscht, "

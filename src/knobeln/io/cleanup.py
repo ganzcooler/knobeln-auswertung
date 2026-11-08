@@ -45,26 +45,18 @@ def plan_actions(
     actions: list[CleanupAction] = []
     for result in results:
         if result.unsupported:
-            actions.append(
-                CleanupAction(result.path, result.relative, "keep")
-            )
+            actions.append(CleanupAction(result.path, result.relative, "keep"))
             continue
         if result.technical_error:
-            actions.append(
-                CleanupAction(result.path, result.relative, "keep")
-            )
+            actions.append(CleanupAction(result.path, result.relative, "keep"))
             continue
 
         if keep_input:
-            actions.append(
-                CleanupAction(result.path, result.relative, "keep")
-            )
+            actions.append(CleanupAction(result.path, result.relative, "keep"))
             continue
 
         if result.force_review:
-            actions.append(
-                CleanupAction(result.path, result.relative, "review")
-            )
+            actions.append(CleanupAction(result.path, result.relative, "review"))
             continue
 
         relevant: list[Gruppe] = []
@@ -72,20 +64,14 @@ def plan_actions(
             relevant.extend(groups_by_bogen.get(bogen_id, []))
 
         if not relevant:
-            actions.append(
-                CleanupAction(result.path, result.relative, "keep")
-            )
+            actions.append(CleanupAction(result.path, result.relative, "keep"))
             continue
 
         offen = [gruppe for gruppe in relevant if gruppe.ist_offen()]
         if offen:
-            actions.append(
-                CleanupAction(result.path, result.relative, "review")
-            )
+            actions.append(CleanupAction(result.path, result.relative, "review"))
         else:
-            actions.append(
-                CleanupAction(result.path, result.relative, "delete")
-            )
+            actions.append(CleanupAction(result.path, result.relative, "delete"))
     return actions
 
 

@@ -159,8 +159,7 @@ class Gruppe:
             warnungen.append(f"Fehlende Werte in Wurf {_wurf_liste(fehlend)}.")
         if ungueltig:
             details = ", ".join(
-                f"Wurf {i}: {self.punkte_roh[i - 1] or 'leer'}"
-                for i in ungueltig
+                f"Wurf {i}: {self.punkte_roh[i - 1] or 'leer'}" for i in ungueltig
             )
             warnungen.append(f"Ungültige Werte ({details}).")
         for i in korrigiert:
@@ -181,9 +180,7 @@ class Gruppe:
         if self.summe_bogen is None:
             if self.summe_bogen_status == "summe_ungueltig":
                 self.statuses.add("summe_ungueltig")
-                warnungen.append(
-                    "Summenzeile ist ungültig (0–2400, durch 5 teilbar)."
-                )
+                warnungen.append("Summenzeile ist ungültig (0–2400, durch 5 teilbar).")
             else:
                 self.statuses.add("summe_fehlt")
                 warnungen.append("Summenzeile fehlt.")
@@ -200,7 +197,9 @@ class Gruppe:
         if self.summe_berechnet is None:
             if self.summe_bogen is not None:
                 self.statuses.add("summe_unvollstaendig")
-                warnungen.append("Berechnete Summe unvollständig, weil Zellwerte fehlen.")
+                warnungen.append(
+                    "Berechnete Summe unvollständig, weil Zellwerte fehlen."
+                )
             self.delta = None
         elif self.summe_bogen is not None and ist_gueltige_summe(self.summe_bogen):
             self.delta = self.summe_bogen - self.summe_berechnet
@@ -222,9 +221,7 @@ class Gruppe:
             )
             self.statuses.add(code)
             detail = self.konflikt_detail or "abweichende Werte"
-            warnungen.append(
-                f"Konflikt: {detail}. Bestehende Werte unverändert."
-            )
+            warnungen.append(f"Konflikt: {detail}. Bestehende Werte unverändert.")
 
         if self.geprueft and self.statuses:
             self.statuses.add("geprueft")

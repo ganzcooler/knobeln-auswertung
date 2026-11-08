@@ -6,7 +6,7 @@ import base64
 import json
 import time
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from openai import (
     APIConnectionError,
@@ -14,6 +14,10 @@ from openai import (
     InternalServerError,
     OpenAI,
     RateLimitError,
+)
+from openai.types.chat import ChatCompletionMessageParam
+from openai.types.shared_params.response_format_json_schema import (
+    ResponseFormatJSONSchema,
 )
 from pydantic import ValidationError
 
@@ -38,7 +42,7 @@ class Usage:
     reasoning_tokens: int = 0
     cost_usd: float = 0.0
 
-    def add(self, other: "Usage") -> None:
+    def add(self, other: Usage) -> None:
         self.prompt_tokens += other.prompt_tokens
         self.completion_tokens += other.completion_tokens
         self.reasoning_tokens += other.reasoning_tokens
@@ -142,11 +146,10 @@ class OpenRouterClient:
                     except (KeyError, ValueError, ValidationError):
                         pass
 
-        data_url = (
-            f"data:{mime_type};base64,"
-            + base64.b64encode(image_bytes).decode("ascii")
+        data_url = f"data:{mime_type};base64," + base64.b64encode(image_bytes).decode(
+            "ascii"
         )
-        messages: list[dict[str, Any]] = [
+        messages: list[ChatCompletionMessageParam] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
                 "role": "user",
@@ -162,7 +165,8 @@ class OpenRouterClient:
             result = self._request_with_length_retry(messages, carry=carry)
         except LLMJSONError as exc:
             carry.add(exc.usage)
-            repair_messages = list(messages) + [
+            repair_messages: list[ChatCompletionMessageParam] = [
+                *messages,
                 {"role": "assistant", "content": exc.raw_content},
                 {
                     "role": "user",
@@ -202,7 +206,7 @@ class OpenRouterClient:
 
     def _request_with_length_retry(
         self,
-        messages: list[dict[str, Any]],
+        messages: list[ChatCompletionMessageParam],
         *,
         max_tokens: int = DEFAULT_MAX_TOKENS,
         carry: Usage | None = None,
@@ -229,7 +233,7 @@ class OpenRouterClient:
 
     def _request_with_retries(
         self,
-        messages: list[dict[str, Any]],
+        messages: list[ChatCompletionMessageParam],
         *,
         max_tokens: int = DEFAULT_MAX_TOKENS,
     ) -> LLMResult:
@@ -239,8 +243,12 @@ class OpenRouterClient:
                     model=self.model,
                     messages=messages,
                     temperature=0,
+                    seed=0,
                     max_tokens=max_tokens,
-                    response_format=response_format(),
+                    response_format=cast(
+                        ResponseFormatJSONSchema,
+                        response_format(),
+                    ),
                     extra_body={
                         "reasoning": {
                             "effort": self.reasoning,

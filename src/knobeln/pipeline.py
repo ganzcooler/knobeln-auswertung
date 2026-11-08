@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Callable
 
 from .config import Config
 from .domain.merge import merge_gruppen
@@ -361,11 +361,7 @@ class Pipeline:
         groups: list[Gruppe],
         file_cost: FileCost,
     ) -> tuple[FileResult, list[Gruppe]]:
-        if (
-            file_cost.prompt_tokens
-            or file_cost.completion_tokens
-            or file_cost.cached
-        ):
+        if file_cost.prompt_tokens or file_cost.completion_tokens or file_cost.cached:
             self.summary.file_costs.append(file_cost)
         return result, groups
 
@@ -404,6 +400,15 @@ class Pipeline:
             file_cost.completion_tokens += llm_result.completion_tokens
             file_cost.reasoning_tokens += llm_result.reasoning_tokens
             file_cost.cost_usd += llm_result.cost_usd
+            if (
+                self.config.max_cost is not None
+                and self.summary.cost_usd > self.config.max_cost
+            ):
+                raise PipelineError(
+                    "Kostenlimit überschritten: "
+                    f"${self.summary.cost_usd:.4f} > "
+                    f"${self.config.max_cost:.4f}."
+                )
 
         ref = BogenRef(
             bogen_id=bogen_id,

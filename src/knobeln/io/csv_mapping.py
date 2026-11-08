@@ -118,10 +118,7 @@ def gruppe_to_rows(
     if gruppe.placeholder:
         return [_row(gruppe, fieldnames, wurf_nr=None)]
 
-    return [
-        _row(gruppe, fieldnames, wurf_nr=i + 1)
-        for i in range(12)
-    ]
+    return [_row(gruppe, fieldnames, wurf_nr=i + 1) for i in range(12)]
 
 
 def _row(
@@ -145,9 +142,7 @@ def _row(
         "Punkte_Roh": "",
         "Korrektur": "",
         "Summe_Bogen_Roh": gruppe.summe_bogen_roh,
-        "Summe_Bogen": (
-            "" if gruppe.summe_bogen is None else str(gruppe.summe_bogen)
-        ),
+        "Summe_Bogen": ("" if gruppe.summe_bogen is None else str(gruppe.summe_bogen)),
         "Summe_Berechnet": (
             "" if gruppe.summe_berechnet is None else str(gruppe.summe_berechnet)
         ),
@@ -165,16 +160,11 @@ def _row(
         ),
     }
     if idx is not None:
-        values["Punkte"] = (
-            "" if gruppe.punkte[idx] is None else str(gruppe.punkte[idx])
-        )
+        values["Punkte"] = "" if gruppe.punkte[idx] is None else str(gruppe.punkte[idx])
         values["Punkte_Roh"] = gruppe.punkte_roh[idx]
         values["Korrektur"] = gruppe.korrekturen[idx] or ""
     extra = gruppe.extra_by_wurf.get(wurf_nr if wurf_nr is not None else None, {})
-    return {
-        name: values.get(name, extra.get(name, ""))
-        for name in fieldnames
-    }
+    return {name: values.get(name, extra.get(name, "")) for name in fieldnames}
 
 
 def _summe_wurde_korrigiert(raw: str, value: int) -> bool:

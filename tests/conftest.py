@@ -6,8 +6,26 @@ from typing import Any
 import pytest
 from PIL import Image
 
-from knobeln.llm.models import BogenLLM
 from knobeln.llm.client import LLMResult
+from knobeln.llm.models import BogenLLM
+
+
+def pytest_addoption(parser) -> None:
+    parser.addoption(
+        "--run-manual",
+        action="store_true",
+        default=False,
+        help="Run paid real-model smoke tests (requires OPENROUTER_API_KEY)",
+    )
+
+
+def pytest_collection_modifyitems(config, items) -> None:
+    if config.getoption("--run-manual"):
+        return
+    skip = pytest.mark.skip(reason="manual test: use --run-manual")
+    for item in items:
+        if "manual" in item.keywords:
+            item.add_marker(skip)
 
 
 def _player(

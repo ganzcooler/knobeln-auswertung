@@ -76,7 +76,7 @@ def read_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
 
 def load_groups(path: Path) -> tuple[list[Gruppe], list[str]]:
     rows, fieldnames = read_rows(path)
-    grouped: "OrderedDict[tuple[str, str], list[dict[str, str]]]" = OrderedDict()
+    grouped: OrderedDict[tuple[str, str], list[dict[str, str]]] = OrderedDict()
     for row in rows:
         bogen_id = str(row.get("Bogen_ID", "")).strip()
         position = str(row.get("Spieler_Position", "")).strip()

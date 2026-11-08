@@ -31,6 +31,7 @@ class Config:
     dry_run: bool = False
     verbose: bool = False
     backup: bool = False
+    max_cost: float | None = None
     cache_dir: Path = Path(".cache/knobeln")
 
     def require_api_key(self) -> str:
@@ -56,19 +57,12 @@ def build_config(
     dry_run: bool = False,
     verbose: bool = False,
     backup: bool = False,
+    max_cost: float | None = None,
 ) -> Config:
     load_dotenv()
     return Config(
-        input_dir=Path(
-            input_dir
-            or os.getenv("KNOBELN_INPUT")
-            or "input"
-        ),
-        output_csv=Path(
-            output_csv
-            or os.getenv("KNOBELN_OUTPUT")
-            or "auswertung.csv"
-        ),
+        input_dir=Path(input_dir or os.getenv("KNOBELN_INPUT") or "input"),
+        output_csv=Path(output_csv or os.getenv("KNOBELN_OUTPUT") or "auswertung.csv"),
         review_dir=Path(review_dir or "review"),
         model=model or os.getenv("KNOBELN_MODEL") or DEFAULT_MODEL,
         reasoning=reasoning or os.getenv("KNOBELN_REASONING") or DEFAULT_REASONING,
@@ -80,4 +74,5 @@ def build_config(
         dry_run=dry_run,
         verbose=verbose,
         backup=backup,
+        max_cost=max_cost,
     )

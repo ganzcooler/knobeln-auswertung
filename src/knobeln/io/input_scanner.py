@@ -66,7 +66,4 @@ def page_count(file: InputFile, data: bytes) -> int:
 
 
 def bogen_ids_for(file: InputFile, data: bytes) -> list[str]:
-    return [
-        bogen_id_for(data, page)
-        for page in range(1, page_count(file, data) + 1)
-    ]
+    return [bogen_id_for(data, page) for page in range(1, page_count(file, data) + 1)]

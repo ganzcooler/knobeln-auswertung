@@ -111,6 +111,7 @@ knobeln [OPTIONS]
   --keep-input        Eingang nach dem Lauf nicht aufräumen (Debugging)
   --dry-run           Nicht schreiben und nicht aufräumen
   --backup            Vor dem Schreiben auswertung.csv.bak anlegen
+  --max-cost USD      Kostenlimit pro Lauf; bricht vor dem CSV-Schreiben ab
   --verbose           Ausführliche Ausgabe
   --version           Version anzeigen
 ```
@@ -345,8 +346,15 @@ src/knobeln/
     csv_store.py
     csv_mapping.py
     cleanup.py
+scripts/
+  check.sh
+  doctor.sh
+  smoke_test.sh
+  compare_golden.py
 tests/
   fixtures/
+  manual/
+    golden/
   test_*.py
 ```
 
@@ -366,7 +374,8 @@ tests/
 - CSV: Semikolon, BOM, Kopfzeile, Quoting, leere Werte.
 - Merge: neu anhängen, Duplikat überspringen, Konflikt nicht überschreiben, menschliche Korrektur erhalten, `Geprueft`, Namenskonflikt, unleserlicher Bogen.
 - Aufräumen: sauber löschen, auffällig nach `review/`, technisch behalten, PDF-Mehrseiter.
-- `--reset`, `--keep-input`, `--dry-run`.
+- `--reset`, `--keep-input`, `--dry-run`, `--max-cost`.
+- Golden-Vergleich der drei Beispiele (`tests/manual/golden/`).
 
 ### 13.2 Integration mit Fake-LLM
 
@@ -382,6 +391,7 @@ tests/
 
 - Ausgeführt am 2026-11-08; Ergebnisse in `.scratch/knobeln-auswertung/issues/09-real-model-smoke-test.md`.
 - Nur `deepseek/deepseek-v4.1-flash` mit `reasoning.effort="max"`.
+- Reproduzierbar über `./scripts/smoke_test.sh` (Golden-Vergleich, `--max-cost`) oder `uv run pytest --run-manual`; nie in CI.
 - Bei künftigen Änderungen erneut Zelltreffer, Summenkontrolle, Laufzeit und Kosten dokumentieren. Kein Wechsel auf ein teureres Modell ohne Rückfrage.
 
 ## 14. Später
