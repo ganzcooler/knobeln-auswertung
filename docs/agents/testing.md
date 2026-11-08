@@ -20,4 +20,4 @@ Nur manuell und kostenpflichtig:
 uv run pytest --run-manual       # derselbe Smoke-Test als pytest
 ```
 
-Golden-Daten liegen unter `tests/manual/golden/`. Der echte Test läuft nie in CI.
+Golden-Daten liegen unter `tests/manual/golden/`. Der echte Test läuft nie in den lokalen Standard-Checks oder in `pre-commit`.

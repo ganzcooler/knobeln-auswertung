@@ -168,7 +168,7 @@ Der echte Modell-Smoke-Test ist kostenpflichtig und läuft nur manuell:
 uv run pytest --run-manual     # derselbe Test über Pytest
 ```
 
-CI führt `pre-commit run --all-files` aus; der echte Modelltest läuft nie in CI.
+Die Checks laufen lokal über `pre-commit` bzw. `scripts/check.sh`; es gibt keinen GitHub-Actions-Workflow. Der echte Modelltest läuft nie in `pre-commit`.
 
 ## Dokumentation
 

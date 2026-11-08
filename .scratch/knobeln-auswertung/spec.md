@@ -391,7 +391,7 @@ tests/
 
 - Ausgeführt am 2026-11-08; Ergebnisse in `.scratch/knobeln-auswertung/issues/09-real-model-smoke-test.md`.
 - Nur `deepseek/deepseek-v4.1-flash` mit `reasoning.effort="max"`.
-- Reproduzierbar über `./scripts/smoke_test.sh` (Golden-Vergleich, `--max-cost`) oder `uv run pytest --run-manual`; nie in CI.
+- Reproduzierbar über `./scripts/smoke_test.sh` (Golden-Vergleich, `--max-cost`) oder `uv run pytest --run-manual`; nie in den lokalen Standard-Checks.
 - Bei künftigen Änderungen erneut Zelltreffer, Summenkontrolle, Laufzeit und Kosten dokumentieren. Kein Wechsel auf ein teureres Modell ohne Rückfrage.
 
 ## 14. Später

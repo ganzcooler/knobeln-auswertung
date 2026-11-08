@@ -29,7 +29,7 @@ All checks passed!
 58 passed, 1 skipped
 ```
 
-Guardrails: pre-commit (Ruff, Ruff-Format, Pyright, Pytest, detect-secrets) und GitHub Actions. Der echte Modelltest ist `--run-manual`/`scripts/smoke_test.sh` und läuft nie in CI. `--max-cost` bricht vor dem CSV-Schreiben ab.
+Guardrails: lokal über pre-commit (Ruff, Ruff-Format, Pyright, Pytest, detect-secrets) und `scripts/check.sh`; bewusst **kein** GitHub-Actions-Workflow. Der echte Modelltest ist `--run-manual`/`scripts/smoke_test.sh` und läuft nie in `pre-commit`. `--max-cost` bricht vor dem CSV-Schreiben ab.
 
 Echter Smoke-Test mit den drei Beispieldateien:
 
