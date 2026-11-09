@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -50,7 +49,9 @@ class SQLiteStore:
                 "INSERT INTO turnier (name, created_at, updated_at) VALUES (?, ?, ?)",
                 (name, now, now),
             )
-            turnier_id = int(cursor.lastrowid or 0)
+            if cursor.lastrowid is None:
+                raise RuntimeError("SQLite hat keine Turnier-ID vergeben.")
+            turnier_id = int(cursor.lastrowid)
         return Turnier(id=turnier_id, name=name)
 
     def list_turniere(self) -> list[Turnier]:
@@ -58,7 +59,7 @@ class SQLiteStore:
             rows = connection.execute(
                 "SELECT id, name FROM turnier ORDER BY id"
             ).fetchall()
-        return [Turnier(id=int(row["id"]), name=str(row["name"])) for row in rows]
+        return [self._turnier_from_row(row) for row in rows]
 
     def get_turnier(self, turnier_id: int) -> Turnier | None:
         with self._connect() as connection:
@@ -67,6 +68,10 @@ class SQLiteStore:
             ).fetchone()
         if row is None:
             return None
+        return self._turnier_from_row(row)
+
+    @staticmethod
+    def _turnier_from_row(row: sqlite3.Row) -> Turnier:
         return Turnier(id=int(row["id"]), name=str(row["name"]))
 
     def rename_turnier(self, turnier_id: int, name: str) -> None:
@@ -114,5 +119,11 @@ class SQLiteStore:
             raise FileNotFoundError(self.path)
         stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S-%f")
         destination = self.path.with_name(f"{self.path.name}.{stamp}.bak")
-        shutil.copy2(self.path, destination)
+        source_connection = self._connect()
+        target_connection = sqlite3.connect(destination)
+        try:
+            source_connection.backup(target_connection)
+        finally:
+            target_connection.close()
+            source_connection.close()
         return destination

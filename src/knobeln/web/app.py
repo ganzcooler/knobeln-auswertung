@@ -33,6 +33,14 @@ def create_app(service: KnobelnService) -> FastAPI:
             **extra,
         }
 
+    def scannen_mit_fehler(request: Request, message: str) -> HTMLResponse:
+        return TEMPLATES.TemplateResponse(
+            request=request,
+            name="scannen.html",
+            context=context(request, error=message),
+            status_code=400,
+        )
+
     @app.get("/", include_in_schema=False)
     def index() -> RedirectResponse:
         return RedirectResponse("/scannen", status_code=303)
@@ -50,12 +58,7 @@ def create_app(service: KnobelnService) -> FastAPI:
         try:
             service.create_turnier(name)
         except ValueError as exc:
-            return TEMPLATES.TemplateResponse(
-                request=request,
-                name="scannen.html",
-                context=context(request, error=str(exc)),
-                status_code=400,
-            )
+            return scannen_mit_fehler(request, str(exc))
         return RedirectResponse("/scannen", status_code=303)
 
     @app.post("/turniere/{turnier_id}/oeffnen", response_class=HTMLResponse)
@@ -72,12 +75,7 @@ def create_app(service: KnobelnService) -> FastAPI:
         try:
             service.rename_turnier(turnier_id, name)
         except ValueError as exc:
-            return TEMPLATES.TemplateResponse(
-                request=request,
-                name="scannen.html",
-                context=context(request, error=str(exc)),
-                status_code=400,
-            )
+            return scannen_mit_fehler(request, str(exc))
         return RedirectResponse("/scannen", status_code=303)
 
     @app.get("/turniere/{turnier_id}/loeschen", response_class=HTMLResponse)

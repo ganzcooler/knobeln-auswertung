@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -53,5 +54,9 @@ def test_loeschen_legt_sicherung_an_und_entfernt_turnier(tmp_path: Path):
     service.delete_turnier(turnier.id)
 
     assert service.list_turniere() == []
-    assert list(tmp_path.glob("knobeln.db.*.bak"))
+    backups = list(tmp_path.glob("knobeln.db.*.bak"))
+    assert len(backups) == 1
+    with sqlite3.connect(backups[0]) as connection:
+        namen = [row[0] for row in connection.execute("SELECT name FROM turnier")]
+    assert namen == ["Sommerfest 2026"]
     assert service.last_opened_turnier() is None

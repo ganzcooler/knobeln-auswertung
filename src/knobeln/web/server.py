@@ -11,14 +11,14 @@ from ..store import SQLiteStore
 from .app import create_app
 
 DEFAULT_DB = Path("knobeln.db")
+LOCAL_HOST = "127.0.0.1"
 
 
 def run_server(
     db_path: Path | None = None,
     *,
-    host: str = "127.0.0.1",
     port: int = 8000,
 ) -> None:
     path = Path(db_path) if db_path is not None else DEFAULT_DB
     service = KnobelnService(SQLiteStore(path))
-    uvicorn.run(create_app(service), host=host, port=port)
+    uvicorn.run(create_app(service), host=LOCAL_HOST, port=port)

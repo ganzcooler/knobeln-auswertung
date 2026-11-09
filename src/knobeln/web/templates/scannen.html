@@ -20,7 +20,7 @@
   {% if turniere %}
     <ul class="turnier-liste">
       {% for turnier in turniere %}
-        <li data-turnier-id="{{ turnier.id }}" class="turnier-zeile{% if current_turnier and current_turnier.id == turnier.id %} aktiv{% endif %}">
+        <li data-turnier-id="{{ turnier.id }}" data-turnier-name="{{ turnier.name }}" class="turnier-zeile{% if current_turnier and current_turnier.id == turnier.id %} aktiv{% endif %}">
           <form method="post" action="/turniere/{{ turnier.id }}/oeffnen" class="inline-form">
             <button type="submit" class="link-button">{{ turnier.name }}</button>
           </form>

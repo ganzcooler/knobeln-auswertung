@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -59,25 +60,32 @@ def test_loeschen_braucht_bestaetigung_und_legt_sicherung_an(tmp_path: Path):
     assert list(tmp_path.glob("knobeln.db.*.bak"))
 
 
-def test_zuletzt_geoeffnetes_turnier_ueberlebt_neustart(tmp_path: Path):
-    service = KnobelnService(SQLiteStore(tmp_path / "knobeln.db"))
-    erstes = service.create_turnier("Erstes")
-    service.create_turnier("Zweites")
-    service.open_turnier(erstes.id)
-
+def test_auswaehlen_ueber_http_und_neustart(tmp_path: Path):
+    db = tmp_path / "knobeln.db"
+    service = KnobelnService(SQLiteStore(db))
     client = TestClient(create_app(service))
-    response = client.get("/scannen")
+    client.post("/turniere", data={"name": "Erstes"})
+    client.post("/turniere", data={"name": "Zweites"})
+    erstes_id = _turnier_id(client, "Erstes")
+
+    response = client.post(f"/turniere/{erstes_id}/oeffnen")
 
     assert response.status_code == 200
-    assert "Erstes" in response.text
-    assert "Zweites" in response.text
     assert "Aktuelles Turnier: Erstes" in response.text
+
+    neuer_client = TestClient(create_app(KnobelnService(SQLiteStore(db))))
+    response = neuer_client.get("/scannen")
+
+    assert response.status_code == 200
+    assert "Aktuelles Turnier: Erstes" in response.text
+    assert "Zweites" in response.text
 
 
 def _turnier_id(client: TestClient, name: str) -> int:
     liste = client.get("/scannen")
-    marker = 'data-turnier-id="'
-    assert name in liste.text
-    start = liste.text.index(marker) + len(marker)
-    ende = liste.text.index('"', start)
-    return int(liste.text[start:ende])
+    pattern = re.compile(
+        r'data-turnier-id="(\d+)"\s+data-turnier-name="' + re.escape(name) + '"'
+    )
+    match = pattern.search(liste.text)
+    assert match is not None, f"Turnier {name!r} nicht gefunden"
+    return int(match.group(1))
