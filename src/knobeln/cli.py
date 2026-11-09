@@ -64,7 +64,7 @@ def import_scans(
     durchgang: int = typer.Option(1, "--durchgang", help="Ziel-Durchgang 1–5"),
     model: str | None = typer.Option(None, "--model", help="OpenRouter-Modell"),
     reasoning: str | None = typer.Option(
-        None, "--reasoning", help="Reasoning-Effort (Default: max)"
+        None, "--reasoning", help="Reasoning-Effort (Default: medium)"
     ),
     max_cost: float | None = typer.Option(
         None, "--max-cost", help="Kostenlimit in USD pro Lauf"

@@ -27,7 +27,7 @@ def test_real_model_smoke(tmp_path: Path) -> None:
         llm_client=OpenRouterClient(
             api_key=api_key,
             model="deepseek/deepseek-v4.1-flash",
-            reasoning="max",
+            reasoning="medium",
         ),
         scan_dir=tmp_path / "scans",
         max_cost=0.15,

@@ -1,0 +1,7 @@
+START img2.jpg max
+DONE img2.jpg max 36.7 s {'prompt_tokens': 1825, 'completion_tokens': 8549, 'reasoning_tokens': 4978, 'cost_usd': 0.003598165}
+START img2.jpg high
+DONE img2.jpg high 18.5 s {'prompt_tokens': 1428, 'completion_tokens': 3616, 'reasoning_tokens': 1987, 'cost_usd': 0.001555388}
+START img2.jpg medium
+DONE img2.jpg medium 14.9 s {'prompt_tokens': 1827, 'completion_tokens': 5473, 'reasoning_tokens': 3724, 'cost_usd': 0.0023371069999999997}
+ALL DONE img2.jpg

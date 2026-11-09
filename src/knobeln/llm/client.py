@@ -99,7 +99,7 @@ class OpenRouterClient:
         *,
         api_key: str,
         model: str,
-        reasoning: str = "max",
+        reasoning: str = "medium",
         cache: LLMCache | None = None,
         no_cache: bool = False,
         timeout: float = 180.0,

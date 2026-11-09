@@ -1,0 +1,355 @@
+{
+  "image": "img.jpg",
+  "effort": "medium",
+  "rep": 2,
+  "elapsed_s": 22.8,
+  "usage": {
+    "prompt_tokens": 1825,
+    "completion_tokens": 5318,
+    "reasoning_tokens": 3529,
+    "cost_usd": 0.002273455
+  },
+  "bogen": {
+    "bogen_unklar": false,
+    "hinweis": null,
+    "durchgang_nr": 1,
+    "spieler": [
+      {
+        "position": 1,
+        "spieler_nr": "43",
+        "spieler_name": "",
+        "wurf_zeilen": [
+          {
+            "wurf_nr": 1,
+            "roh": "110",
+            "punkte": 110,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 2,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 3,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 4,
+            "roh": "15",
+            "punkte": 15,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 5,
+            "roh": "95",
+            "punkte": 95,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 6,
+            "roh": "120",
+            "punkte": 120,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 7,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 8,
+            "roh": "8.5",
+            "punkte": 85,
+            "hinweis": "Trennzeichen entfernt; als 85 gelesen."
+          },
+          {
+            "wurf_nr": 9,
+            "roh": "80",
+            "punkte": 80,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 10,
+            "roh": "25",
+            "punkte": 25,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 11,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 12,
+            "roh": "60",
+            "punkte": 60,
+            "hinweis": null
+          }
+        ],
+        "summe_bogen": {
+          "roh": "590",
+          "punkte": 590,
+          "hinweis": null
+        }
+      },
+      {
+        "position": 2,
+        "spieler_nr": "9",
+        "spieler_name": "",
+        "wurf_zeilen": [
+          {
+            "wurf_nr": 1,
+            "roh": "10",
+            "punkte": 10,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 2,
+            "roh": "95",
+            "punkte": 95,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 3,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 4,
+            "roh": "105",
+            "punkte": 105,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 5,
+            "roh": "25",
+            "punkte": 25,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 6,
+            "roh": "110",
+            "punkte": 110,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 7,
+            "roh": "105",
+            "punkte": 105,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 8,
+            "roh": "80",
+            "punkte": 80,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 9,
+            "roh": "110",
+            "punkte": 110,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 10,
+            "roh": "130",
+            "punkte": 130,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 11,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 12,
+            "roh": "25",
+            "punkte": 25,
+            "hinweis": null
+          }
+        ],
+        "summe_bogen": {
+          "roh": "795",
+          "punkte": 795,
+          "hinweis": null
+        }
+      },
+      {
+        "position": 3,
+        "spieler_nr": "42",
+        "spieler_name": "",
+        "wurf_zeilen": [
+          {
+            "wurf_nr": 1,
+            "roh": "105",
+            "punkte": 105,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 2,
+            "roh": "65",
+            "punkte": 65,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 3,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 4,
+            "roh": "105",
+            "punkte": 105,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 5,
+            "roh": "110",
+            "punkte": 110,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 6,
+            "roh": "8.5",
+            "punkte": 85,
+            "hinweis": "Trennzeichen entfernt; als 85 gelesen."
+          },
+          {
+            "wurf_nr": 7,
+            "roh": "25",
+            "punkte": 25,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 8,
+            "roh": "10",
+            "punkte": 10,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 9,
+            "roh": "80",
+            "punkte": 80,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 10,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 11,
+            "roh": "95",
+            "punkte": 95,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 12,
+            "roh": "80",
+            "punkte": 80,
+            "hinweis": null
+          }
+        ],
+        "summe_bogen": {
+          "roh": "760",
+          "punkte": 760,
+          "hinweis": null
+        }
+      },
+      {
+        "position": 4,
+        "spieler_nr": "2",
+        "spieler_name": "",
+        "wurf_zeilen": [
+          {
+            "wurf_nr": 1,
+            "roh": "8.5",
+            "punkte": 85,
+            "hinweis": "Trennzeichen entfernt; als 85 gelesen."
+          },
+          {
+            "wurf_nr": 2,
+            "roh": "150",
+            "punkte": 150,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 3,
+            "roh": "30",
+            "punkte": 30,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 4,
+            "roh": "/",
+            "punkte": 0,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 5,
+            "roh": "110",
+            "punkte": 110,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 6,
+            "roh": "100",
+            "punkte": 100,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 7,
+            "roh": "95",
+            "punkte": 95,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 8,
+            "roh": "15",
+            "punkte": 15,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 9,
+            "roh": "105",
+            "punkte": 105,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 10,
+            "roh": "110",
+            "punkte": 110,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 11,
+            "roh": "25",
+            "punkte": 25,
+            "hinweis": null
+          },
+          {
+            "wurf_nr": 12,
+            "roh": "110",
+            "punkte": 110,
+            "hinweis": null
+          }
+        ],
+        "summe_bogen": {
+          "roh": "935",
+          "punkte": 935,
+          "hinweis": null
+        }
+      }
+    ]
+  }
+}

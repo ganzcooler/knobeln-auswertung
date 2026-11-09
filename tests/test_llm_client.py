@@ -55,6 +55,7 @@ def _client(
     responses: list[str | tuple[str, str]],
     *,
     no_cache: bool = False,
+    reasoning: str | None = "medium",
 ) -> tuple[OpenRouterClient, FakeOpenAI]:
     created: list[FakeOpenAI] = []
 
@@ -64,13 +65,15 @@ def _client(
         return instance
 
     monkeypatch.setattr("knobeln.llm.client.OpenAI", factory)
-    client = OpenRouterClient(
-        api_key="dummy",
-        model="deepseek/deepseek-v4.1-flash",
-        reasoning="max",
-        cache=LLMCache(tmp_path / "cache"),
-        no_cache=no_cache,
-    )
+    options: dict = {
+        "api_key": "dummy",
+        "model": "deepseek/deepseek-v4.1-flash",
+        "cache": LLMCache(tmp_path / "cache"),
+        "no_cache": no_cache,
+    }
+    if reasoning is not None:
+        options["reasoning"] = reasoning
+    client = OpenRouterClient(**options)
     return client, created[0]
 
 
@@ -94,7 +97,7 @@ def test_request_und_cache(monkeypatch, tmp_path: Path):
     assert call["model"] == "deepseek/deepseek-v4.1-flash"
     assert call["temperature"] == 0
     assert call["response_format"]["type"] == "json_schema"
-    assert call["extra_body"]["reasoning"]["effort"] == "max"
+    assert call["extra_body"]["reasoning"]["effort"] == "medium"
     assert call["extra_body"]["reasoning"]["exclude"] is True
     image_url = call["messages"][1]["content"][1]["image_url"]["url"]
     assert "data:image/jpeg;base64," in image_url
@@ -109,6 +112,20 @@ def test_request_und_cache(monkeypatch, tmp_path: Path):
     )
     assert result2.cached is True
     assert api2.completions.calls == []
+
+
+def test_default_reasoning_ist_medium(monkeypatch, tmp_path: Path):
+    payload = json.dumps(FAKE_RESPONSES["img1.jpg"])
+    client, api = _client(monkeypatch, tmp_path, [payload], reasoning=None)
+
+    client.extract_bogen(
+        bogen_id="b-default",
+        quelle="img1.jpg",
+        image_bytes=b"fake-image",
+        mime_type="image/jpeg",
+    )
+
+    assert api.completions.calls[0]["extra_body"]["reasoning"]["effort"] == "medium"
 
 
 def test_length_retry(monkeypatch, tmp_path: Path):

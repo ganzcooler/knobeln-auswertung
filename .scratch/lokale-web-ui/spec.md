@@ -168,6 +168,7 @@ Eine lokale Web-App auf `127.0.0.1` mit SQLite als Zustand und einem dauerhaften
 - Die UI pollt per HTMX; ein laufender Job überlebt das Schließen des Browsers, solange der Server läuft.
 - Nach einem Server-Neustart werden offene Jobs wieder aufgenommen.
 - Standardmäßig wird sequenziell extrahiert, damit Kosten und Rate-Limits kontrollierbar bleiben.
+- Standard-Reasoning für die Ziffernextraktion ist `medium`; `--reasoning` und `KNOBELN_REASONING` können es überschreiben.
 - Tokenverbrauch und geschätzte Kosten werden pro Extraktion gespeichert und in der UI sichtbar gemacht.
 - `--max-cost` bleibt als Kostenbremse erhalten; bei Überschreitung wird die weitere Extraktion gestoppt.
 - Fehlt der API-Key oder das Netz, startet die Web-UI trotzdem. Uploads werden angenommen und warten; die Extraktion wird später erneut versucht.
