@@ -82,6 +82,8 @@
         </form>
       {% endif %}
 
+      <div id="stapel"
+           {% if bogen_warten or bogen_laeuft %}hx-get="/scannen" hx-trigger="every 3s" hx-select="#stapel" hx-swap="outerHTML"{% endif %}>
       <div class="section-row section-gap">
         <div>
           <h2>Stapel</h2>
@@ -120,6 +122,7 @@
           <p>Lege die Scans für diesen Durchgang hier ab.</p>
         </div>
       {% endif %}
+      </div>
 
       <h2 class="section-gap">Manuelle Durchgangsergebnisse</h2>
       <p class="muted">Nur nötig, wenn keine brauchbare Extraktion möglich ist. Pro Spieler reicht die Summe des Durchgangs.</p>
@@ -190,8 +193,5 @@
     <h2>Kein Turnier ausgewählt</h2>
     <p>Wähle oben ein Turnier aus oder lege ein neues an.</p>
   </section>
-{% endif %}
-{% if bogen_warten or bogen_laeuft %}
-  <script>setTimeout(() => window.location.reload(), 3000);</script>
 {% endif %}
 {% endblock %}
