@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Knobeln-Auswertung{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="top-bar">
+    <div class="brand">Knobeln-Auswertung</div>
+    <div class="turnier-status">
+      {% if current_turnier %}
+        Aktuelles Turnier: {{ current_turnier.name }}
+      {% else %}
+        Kein Turnier ausgewählt
+      {% endif %}
+    </div>
+    <nav class="tabs" aria-label="Hauptbereiche">
+      <a class="tab tab-active" href="/scannen">Scannen</a>
+      <span class="tab tab-inactive" aria-disabled="true">Prüfen (0)</span>
+      <span class="tab tab-inactive" aria-disabled="true">Rangliste</span>
+    </nav>
+  </header>
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

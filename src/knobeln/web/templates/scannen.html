@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Scannen · Knobeln-Auswertung{% endblock %}
+
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Werkbank</p>
+    <h1>Scannen</h1>
+    <p class="lede">Lege die Bögen des Durchgangs ab. Alles, was keine Prüfung braucht, ist danach schon erledigt.</p>
+  </div>
+</section>
+
+{% if error %}
+  <p class="error" role="alert">{{ error }}</p>
+{% endif %}
+
+<section class="panel">
+  <h2>Turniere</h2>
+  {% if turniere %}
+    <ul class="turnier-liste">
+      {% for turnier in turniere %}
+        <li data-turnier-id="{{ turnier.id }}" class="turnier-zeile{% if current_turnier and current_turnier.id == turnier.id %} aktiv{% endif %}">
+          <form method="post" action="/turniere/{{ turnier.id }}/oeffnen" class="inline-form">
+            <button type="submit" class="link-button">{{ turnier.name }}</button>
+          </form>
+          <form method="post" action="/turniere/{{ turnier.id }}/umbenennen" class="inline-form rename-form">
+            <label class="visually-hidden" for="name-{{ turnier.id }}">Neuer Name für {{ turnier.name }}</label>
+            <input id="name-{{ turnier.id }}" type="text" name="name" value="{{ turnier.name }}" required>
+            <button type="submit" class="secondary">Umbenennen</button>
+          </form>
+          <a class="secondary-link" href="/turniere/{{ turnier.id }}/loeschen">Löschen</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">
+      <h3>Noch kein Turnier</h3>
+      <p>Lege das erste Turnier an, damit du Durchgänge und Bögen erfassen kannst.</p>
+    </div>
+  {% endif %}
+
+  <form method="post" action="/turniere" class="form">
+    <label for="name-neu">Neues Turnier</label>
+    <div class="form-row">
+      <input id="name-neu" type="text" name="name" placeholder="z. B. Sommerfest 2026" required>
+      <button type="submit" class="primary">Turnier anlegen</button>
+    </div>
+  </form>
+</section>
+
+{% if current_turnier %}
+  <section class="panel drop-zone">
+    <p class="eyebrow">Durchgang</p>
+    <h2>{{ current_turnier.name }}</h2>
+    <p>Noch keine Bögen. Die Drop-Zone für Scans folgt im nächsten Schritt.</p>
+  </section>
+{% else %}
+  <section class="panel empty-state">
+    <h2>Kein Turnier ausgewählt</h2>
+    <p>Wähle oben ein Turnier aus oder lege ein neues an.</p>
+  </section>
+{% endif %}
+{% endblock %}

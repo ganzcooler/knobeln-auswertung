@@ -11,11 +11,16 @@ dependencies = [
     "pillow>=10.4",
     "typer>=0.15",
     "rich>=13.9",
+    "fastapi>=0.162.2",
+    "uvicorn>=0.54.0",
+    "jinja2>=3.1.6",
+    "python-multipart>=0.0.33",
 ]
 
 [dependency-groups]
 dev = [
     "detect-secrets>=1.5.0",
+    "httpx>=0.28.1",
     "pre-commit>=4.7.0",
     "pyright>=1.1.414",
     "pytest>=8.3",

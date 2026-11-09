@@ -14,7 +14,8 @@ EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 def test_help():
     result = CliRunner().invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "--input" in result.output
+    assert "web" in result.output
+    assert "run" in result.output
 
 
 def test_version():
@@ -26,7 +27,7 @@ def test_version():
 def test_fehlender_api_key(monkeypatch):
     monkeypatch.setattr("knobeln.config.load_dotenv", lambda *args, **kwargs: None)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    result = CliRunner().invoke(app, ["--input", "input"])
+    result = CliRunner().invoke(app, ["run", "--input", "input"])
     assert result.exit_code == 1
     assert "OPENROUTER_API_KEY" in result.output
 
@@ -45,6 +46,7 @@ def test_cli_mit_fake_client(tmp_path: Path, monkeypatch):
     result = CliRunner().invoke(
         app,
         [
+            "run",
             "--input",
             str(input_dir),
             "--output",
@@ -60,3 +62,36 @@ def test_cli_mit_fake_client(tmp_path: Path, monkeypatch):
     assert result.exit_code == 0, result.output
     assert output.exists()
     assert "Zusammenfassung" in result.output
+
+
+def test_web_command_startet_nur_localhost(tmp_path: Path, monkeypatch):
+    calls: dict[str, object] = {}
+
+    def fake_run_server(db_path=None, *, host="127.0.0.1", port=8000):
+        calls["db_path"] = db_path
+        calls["host"] = host
+        calls["port"] = port
+
+    monkeypatch.setattr("knobeln.cli.run_server", fake_run_server)
+    db = tmp_path / "knobeln.db"
+
+    result = CliRunner().invoke(app, ["web", "--db", str(db)])
+
+    assert result.exit_code == 0, result.output
+    assert calls["host"] == "127.0.0.1"
+    assert calls["db_path"] == db
+
+
+def test_ohne_argument_startet_web(tmp_path: Path, monkeypatch):
+    calls: dict[str, object] = {}
+
+    def fake_run_server(db_path=None, *, host="127.0.0.1", port=8000):
+        calls["db_path"] = db_path
+        calls["host"] = host
+
+    monkeypatch.setattr("knobeln.cli.run_server", fake_run_server)
+
+    result = CliRunner().invoke(app, [])
+
+    assert result.exit_code == 0, result.output
+    assert calls["host"] == "127.0.0.1"

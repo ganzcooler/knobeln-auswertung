@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Turnier löschen · Knobeln-Auswertung{% endblock %}
+
+{% block content %}
+<section class="panel danger-panel">
+  <p class="eyebrow">Turnier löschen</p>
+  <h1>Wirklich löschen?</h1>
+  <p>„{{ turnier.name }}“ wird dauerhaft entfernt. Vorher legt die App eine SQLite-Kopie an.</p>
+  <form method="post" action="/turniere/{{ turnier.id }}/loeschen" class="form-row">
+    <button type="submit" class="primary danger">Wirklich löschen</button>
+    <a class="secondary-link" href="/scannen">Abbrechen</a>
+  </form>
+</section>
+{% endblock %}

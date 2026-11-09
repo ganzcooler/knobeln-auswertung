@@ -1,4 +1,4 @@
-"""CLI-Einstiegspunkt."""
+"""CLI-Einstiegspunkt: Web-UI primär, Batch-Lauf als Zweitweg."""
 
 from __future__ import annotations
 
@@ -12,13 +12,37 @@ from .config import ConfigError, build_config
 from .llm.cache import LLMCache
 from .llm.client import OpenRouterClient
 from .pipeline import Pipeline, PipelineError, RunSummary
+from .web.server import run_server
 
 app = typer.Typer(
     add_completion=False,
     no_args_is_help=False,
-    help="Wertet gescannte Knobeln-Protokollbögen als Excel-CSV aus.",
+    invoke_without_command=True,
+    help="Lokale Web-UI und Batch-Auswertung für Knobeln-Protokollbögen.",
 )
 console = Console(stderr=True)
+
+
+@app.callback()
+def main(ctx: typer.Context, version: bool = typer.Option(False, "--version")) -> None:
+    if version:
+        console.print(f"knobeln-auswertung {__version__}")
+        raise typer.Exit()
+    if ctx.invoked_subcommand is None:
+        run_server()
+        raise typer.Exit()
+
+
+@app.command()
+def web(
+    db: Path | None = typer.Option(
+        None, "--db", help="SQLite-Datei (Default: knobeln.db)"
+    ),
+    port: int = typer.Option(8000, "--port", help="Port der lokalen Web-UI"),
+) -> None:
+    """Startet die lokale Web-UI."""
+    run_server(db, port=port)
+    raise typer.Exit()
 
 
 @app.command()
@@ -59,12 +83,8 @@ def run(
         help="Kostenlimit in USD pro Lauf; bricht vor dem CSV-Schreiben ab",
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Ausführliche Ausgabe"),
-    version: bool = typer.Option(False, "--version", help="Version anzeigen"),
 ) -> None:
-    if version:
-        console.print(f"knobeln-auswertung {__version__}")
-        raise typer.Exit()
-
+    """Wertet Scans als CSV aus (alter Batch-Pfad)."""
     if reset and not yes:
         if not typer.confirm("Bestehende CSV wirklich archivieren und neu beginnen?"):
             reset = False
