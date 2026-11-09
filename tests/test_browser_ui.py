@@ -123,6 +123,7 @@ def test_browser_scan_htmx_und_pruefen(page: Page, tmp_path: Path):
         _upload(page, "img2.jpg")
 
         expect(page.get_by_text("fertig", exact=True)).to_be_visible(timeout=15_000)
+        page.wait_for_load_state("networkidle")
         page.get_by_role("link", name="Weiter zum Prüfen (1)").click()
         expect(page.get_by_text("Summe stimmt nicht")).to_be_visible()
         expect(page.get_by_text("Zoom umschalten")).to_be_visible()
@@ -201,12 +202,85 @@ def test_browser_konflikt_ansicht(page: Page, tmp_path: Path):
             data=(EXAMPLES / "img1.jpg").read_bytes(),
         )
         expect(page.get_by_text("2 von 2 Bögen gelesen")).to_be_visible(timeout=15_000)
+        page.wait_for_load_state("networkidle")
 
         page.locator("nav.tabs").get_by_role("link", name="Prüfen").click()
         page.locator(".queue-item", has_text="Konflikt bei Spieler 41").click()
         expect(page.get_by_text("Diese Erfassung gilt").first).to_be_visible()
         page.get_by_role("button", name="Diese Erfassung gilt").first.click()
         expect(page.get_by_text("Gespeichert.")).to_be_visible()
+
+
+def test_browser_kompletter_abend_ueber_zwei_durchgaenge(page: Page, tmp_path: Path):
+    page.set_default_timeout(20_000)
+    with live_server(tmp_path) as (_service, url):
+        _create_turnier_und_durchgang(page, url, nummer=2)
+        _upload(page, "img1.jpg")
+        expect(page.get_by_text("fertig", exact=True)).to_be_visible(timeout=20_000)
+        page.wait_for_load_state("networkidle")
+        page.get_by_role("button", name="Bogen bestätigen").click()
+        expect(page.get_by_text("Bogen bestätigt.")).to_be_visible()
+
+        page.locator("#manuell-nr").fill("99")
+        page.locator("#manuell-summe").fill("500")
+        page.get_by_role("button", name="Manuell speichern").click()
+        expect(page.get_by_text("Manuelles Ergebnis gespeichert.")).to_be_visible()
+
+        page.locator("nav.tabs").get_by_role("link", name="Rangliste").click()
+        page.get_by_role("button", name="Durchgang 2 abschließen").click()
+        expect(page.get_by_text("Bestätigt").first).to_be_visible()
+        expect(page.get_by_role("heading", name="Durchgang 2")).to_be_visible()
+
+        page.locator("nav.tabs").get_by_role("link", name="Scannen").click()
+        page.locator("#weiterer-durchgang").select_option("3")
+        page.get_by_role("button", name="Durchgang anlegen").click()
+        expect(page.get_by_role("heading", name="Durchgang 3")).to_be_visible()
+
+        _upload(page, "img2.jpg")
+        expect(page.get_by_text("fertig", exact=True)).to_be_visible(timeout=20_000)
+        page.wait_for_load_state("networkidle")
+        page.locator("nav.tabs").get_by_role("link", name="Prüfen").click()
+        expect(page.get_by_text("Summe stimmt nicht")).to_be_visible()
+        page.get_by_role("button", name="Summenabweichung akzeptieren").click()
+        expect(page.get_by_text("Gespeichert.")).to_be_visible()
+
+        page.locator("nav.tabs").get_by_role("link", name="Rangliste").click()
+        expect(page.get_by_text("Vorläufig").first).to_be_visible()
+        page.get_by_role("button", name="Durchgang 3 abschließen").click()
+        expect(page.get_by_text("Bestätigt").first).to_be_visible()
+        expect(page.get_by_text("985", exact=True).first).to_be_visible()
+        expect(page.get_by_text("755", exact=True).first).to_be_visible()
+        expect(page.get_by_text("500", exact=True).first).to_be_visible()
+
+        with page.expect_download() as download_info:
+            page.get_by_role("link", name="XLSX exportieren").click()
+        assert download_info.value.suggested_filename.endswith(".xlsx")
+
+
+def test_browser_offline_und_wieder_verbunden(page: Page, tmp_path: Path):
+    page.set_default_timeout(20_000)
+    with live_server(tmp_path, with_llm=False) as (service, url):
+        _create_turnier_und_durchgang(page, url, nummer=2)
+        _upload(page, "img1.jpg")
+        expect(page.get_by_text("warten", exact=True)).to_be_visible()
+        expect(
+            page.get_by_text("Der Dienst ist gerade nicht erreichbar")
+        ).to_be_visible()
+
+        page.locator("#manuell-nr").fill("99")
+        page.locator("#manuell-summe").fill("500")
+        page.get_by_role("button", name="Manuell speichern").click()
+        expect(page.get_by_text("Manuelles Ergebnis gespeichert.")).to_be_visible()
+        page.locator("nav.tabs").get_by_role("link", name="Rangliste").click()
+        expect(page.get_by_text("500", exact=True).first).to_be_visible()
+
+        page.locator("nav.tabs").get_by_role("link", name="Scannen").click()
+        service.llm_client = FakeLLMClient()
+        page.get_by_role("button", name="Erneut prüfen").click()
+        expect(page.get_by_text("fertig", exact=True)).to_be_visible(timeout=20_000)
+        expect(
+            page.get_by_text("Der Dienst ist gerade nicht erreichbar")
+        ).to_be_hidden()
 
 
 def test_browser_tablet_layout_und_fokusgroesse(page: Page, tmp_path: Path):
