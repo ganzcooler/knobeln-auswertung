@@ -94,11 +94,18 @@ bedienbar, und der Zähler wird per `aria-live` aktualisiert.
 
 ```bash
 uv sync --group dev
+uv run playwright install chromium
 uv run pre-commit install
 
-./scripts/check.sh       # Ruff, Format, Pyright, Pytest
+./scripts/check.sh       # Ruff, Format, Pyright, Pytest ohne Browser
+./scripts/test-browser.sh # echte Headless-Browser-Tests
 ./scripts/doctor.sh      # uv, .env, Git-Remote, Scratch-Verzeichnis
 ```
+
+Die Browser-Tests laufen headless über Playwright/Chromium. Wenn Chromium
+fehlt, einmalig `uv run playwright install chromium` ausführen; auf Systemen
+ohne passende Bibliotheken zusätzlich
+`uv run playwright install-deps chromium` (benötigt sudo).
 
 Die Tests nutzen einen Fake-LLM-Client und die Beispiele aus `examples/`.
 Der echte Modelltest ist kostenpflichtig und läuft nur manuell:

@@ -22,6 +22,7 @@ dependencies = [
 dev = [
     "detect-secrets>=1.5.0",
     "httpx>=0.28.1",
+    "playwright>=1.64.1",
     "pre-commit>=4.7.0",
     "pyright>=1.1.414",
     "pytest>=8.3",
@@ -43,6 +44,7 @@ testpaths = ["tests"]
 addopts = "-q"
 markers = [
     "manual: requires a real OPENROUTER_API_KEY and costs money; run with --run-manual",
+    "browser: runs against a real headless Chromium via Playwright",
 ]
 
 [tool.ruff]

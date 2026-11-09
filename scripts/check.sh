@@ -7,4 +7,4 @@ export PATH="$HOME/.local/bin:$PATH"
 uv run ruff check src tests scripts
 uv run ruff format --check src tests scripts
 uv run pyright
-uv run pytest
+uv run pytest -m "not browser"

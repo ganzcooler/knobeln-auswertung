@@ -29,7 +29,19 @@ Default-Suite: `uv run pytest` — schnell, ohne Netzwerk, ohne API-Key.
 | Echte Modell-Extraktion | `tests/manual/test_real_smoke.py` (manuell, kostenpflichtig) |
 
 Die Abdeckung ist verhaltensorientiert an den bestätigten Seams; sie ist keine
-zeilenweise Coverage-Garantie. Der Standardlauf ist `./scripts/check.sh`.
+zeilenweise Coverage-Garantie. Der Standardlauf ist `./scripts/check.sh`
+(ohne Browser). Die echten Headless-Browser-Tests laufen separat:
+
+```bash
+uv run playwright install chromium   # einmalig
+./scripts/test-browser.sh
+```
+
+Sie decken die drei Sichten im echten Chromium ab: HTMX-Statusaktualisierung,
+Prüfen und Summenentscheidung, manuelle Erfassung, Rangliste/Vollbild/XLSX-
+Download, Hilfe-Dialog inklusive `?`/`Esc`, Konfliktauswahl, Löschbestätigung
+und Tablet-Viewport/44-px-Ziele. Auf Systemen ohne passende Systembibliotheken
+hilft `uv run playwright install-deps chromium` (sudo).
 
 ## Echter Modelltest
 
