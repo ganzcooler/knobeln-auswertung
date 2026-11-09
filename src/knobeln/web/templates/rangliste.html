@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Rangliste · Knobeln-Auswertung{% endblock %}
+
+{% block content %}
+<section class="section-head {% if vollbild %}fullscreen-head{% endif %}">
+  <div>
+    <p class="eyebrow">Ergebnis</p>
+    <h1>Rangliste</h1>
+    {% if current_turnier %}
+      <p class="lede">{{ current_turnier.name }}</p>
+    {% else %}
+      <p class="lede">Noch kein Turnier ausgewählt.</p>
+    {% endif %}
+  </div>
+  {% if current_turnier %}
+    <div class="form-row">
+      <a class="secondary-link" href="/rangliste?vollbild={{ 0 if vollbild else 1 }}">{{ 'Vollbild beenden' if vollbild else 'Vollbild' }}</a>
+      <a class="primary link-button" href="/rangliste/export.xlsx">XLSX exportieren</a>
+      {% if current_durchgang and current_durchgang.status != 'abgeschlossen' %}
+        <form method="post" action="/durchgang/{{ current_durchgang.id }}/abschliessen" class="inline-form">
+          <button type="submit" class="secondary">Durchgang {{ current_durchgang.nummer }} abschließen</button>
+        </form>
+      {% elif current_durchgang %}
+        <form method="post" action="/durchgang/{{ current_durchgang.id }}/wieder-oeffnen" class="inline-form">
+          <button type="submit" class="secondary">Durchgang {{ current_durchgang.nummer }} wieder öffnen</button>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
+{% if not current_turnier %}
+  <section class="panel empty-state">
+    <h2>Noch keine Ergebnisse</h2>
+    <p>Lege zuerst ein Turnier an und erfasse Bögen.</p>
+    <a class="primary link-button" href="/scannen">Zum Scannen</a>
+  </section>
+{% else %}
+  {% if current_durchgang %}
+    <div class="status-banner {% if current_durchgang.status == 'abgeschlossen' %}status-confirmed{% else %}status-provisional{% endif %}">
+      {% if current_durchgang.status == 'abgeschlossen' %}
+        <span>Bestätigt · Durchgang {{ current_durchgang.nummer }} ist abgeschlossen.</span>
+      {% else %}
+        <span>Vorläufig{% if prueffall_count %} – {{ prueffall_count }} offene {{ 'Prüfung' if prueffall_count == 1 else 'Prüfungen' }}{% endif %}.</span>
+        {% if prueffall_count %}<a class="secondary-link" href="/pruefen">Prüfungen anzeigen</a>{% endif %}
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <section class="panel {% if vollbild %}fullscreen-table{% endif %}">
+    <h2>Gesamt</h2>
+    {% if gesamt %}
+      <table class="table leaderboard">
+        <thead><tr><th>Rang</th><th>Spieler-Nr.</th><th>Name</th><th>Summe</th><th>Quelle</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for row in gesamt %}
+            <tr>
+              <td class="number">{{ row.rang }}</td>
+              <td class="number">{{ row.spieler_nr }}</td>
+              <td>{{ row.spieler_name }}</td>
+              <td class="number number-lg">{{ row.summe }}</td>
+              <td><span class="badge badge-{{ row.quelle }}">{{ row.quelle }}</span></td>
+              <td>{{ row.status }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="empty-state">
+        <h3>Noch keine bestätigten Ergebnisse</h3>
+        <p>Prüfe die Bögen oder erfasse die Summen manuell.</p>
+        <a class="primary link-button" href="/pruefen">Zu den Prüfungen</a>
+      </div>
+    {% endif %}
+  </section>
+
+  {% for durchgang, rows in durchgangsliste %}
+    <section class="panel">
+      <div class="section-row">
+        <h2>Durchgang {{ durchgang.nummer }}</h2>
+        <span class="badge badge-{{ 'bestaetigt' if durchgang.status == 'abgeschlossen' else 'vorlaeufig' }}">{{ durchgang.status }}</span>
+      </div>
+      {% if rows %}
+        <table class="table leaderboard">
+          <thead><tr><th>Rang</th><th>Spieler-Nr.</th><th>Name</th><th>Summe</th><th>Quelle</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td class="number">{{ row.rang }}</td>
+                <td class="number">{{ row.spieler_nr }}</td>
+                <td>{{ row.spieler_name }}</td>
+                <td class="number number-lg">{{ row.summe }}</td>
+                <td><span class="badge badge-{{ row.quelle }}">{{ row.quelle }}</span></td>
+                <td>{{ row.status }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">Für diesen Durchgang gibt es noch keine Ergebnisse.</p>
+      {% endif %}
+    </section>
+  {% endfor %}
+{% endif %}
+{% endblock %}

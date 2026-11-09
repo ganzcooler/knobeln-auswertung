@@ -6,12 +6,12 @@
 
 **Blocked by:** 03 — Scans importieren und im Stapel sehen
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Ein Upload erzeugt einen Job; der Worker verarbeitet Jobs standardmäßig sequenziell.
-- [ ] Ein erfolgreicher Job speichert vier Spieler mit je zwölf Wurf-Zeilen, Summenzeile und Status; der Bogen ist sichtbar.
-- [ ] Ein Fehler setzt den Job auf „Fehler“ und bietet „Erneut versuchen“.
-- [ ] Ohne Netz oder API-Key bleibt der Job „warten“; Prüfen, manuelle Erfassung und Rangliste bleiben bedienbar.
-- [ ] Tokenverbrauch und geschätzte Kosten werden pro Extraktion gespeichert und angezeigt; `--max-cost` stoppt weitere Extraktion.
-- [ ] Das Schließen des Browsers unterbricht den Server-Job nicht; nach einem Server-Neustart werden offene Jobs wieder aufgenommen.
-- [ ] Tests mit Fake-LLM decken Erfolg, Fehler, Retry, Cache und Kostenlimit ab; der echte Modelltest bleibt manuell.
+- [x] Ein Upload erzeugt einen Job; der Worker verarbeitet Jobs standardmäßig sequenziell.
+- [x] Ein erfolgreicher Job speichert vier Spieler mit je zwölf Wurf-Zeilen, Summenzeile und Status; der Bogen ist sichtbar.
+- [x] Ein Fehler setzt den Job auf „Fehler“ und bietet „Erneut versuchen“.
+- [x] Ohne Netz oder API-Key bleibt der Job „warten“; Prüfen, manuelle Erfassung und Rangliste bleiben bedienbar.
+- [x] Tokenverbrauch und geschätzte Kosten werden pro Extraktion gespeichert und angezeigt; `--max-cost` stoppt weitere Extraktion.
+- [x] Das Schließen des Browsers unterbricht den Server-Job nicht; nach einem Server-Neustart werden offene Jobs wieder aufgenommen.
+- [x] Tests mit Fake-LLM decken Erfolg, Fehler, Retry, Cache und Kostenlimit ab; der echte Modelltest bleibt manuell.

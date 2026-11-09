@@ -6,12 +6,12 @@
 
 **Blocked by:** 02 — Durchgang anlegen und auswählen
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Eine Tabelle mit „+ Spieler“ erfasst Spieler-Nr. (Pflicht), optionalen Namen und eine Summe.
-- [ ] Ungültige Summen (außerhalb 0–2400 oder nicht durch 5 teilbar) werden inline abgelehnt.
-- [ ] Das Ergebnis wird als Durchgangsergebnis mit Quelle „manuell“ gespeichert und ist im Durchgang sichtbar.
-- [ ] Manuelle Ergebnisse zählen für Rangliste und Abschluss und sind vor dem Abschluss bearbeitbar.
-- [ ] Manuelle Ergebnisse sind keine Prüffälle, solange die Summe gültig ist.
-- [ ] Die Erfassung funktioniert ohne API-Key und ohne Netz.
-- [ ] Tests am Anwendungskern und an der HTTP-Fläche decken Anlegen, Validierung, Bearbeiten und Offline-Fall ab.
+- [x] Eine Tabelle mit „+ Spieler“ erfasst Spieler-Nr. (Pflicht), optionalen Namen und eine Summe.
+- [x] Ungültige Summen (außerhalb 0–2400 oder nicht durch 5 teilbar) werden inline abgelehnt.
+- [x] Das Ergebnis wird als Durchgangsergebnis mit Quelle „manuell“ gespeichert und ist im Durchgang sichtbar.
+- [x] Manuelle Ergebnisse zählen für Rangliste und Abschluss und sind vor dem Abschluss bearbeitbar.
+- [x] Manuelle Ergebnisse sind keine Prüffälle, solange die Summe gültig ist.
+- [x] Die Erfassung funktioniert ohne API-Key und ohne Netz.
+- [x] Tests am Anwendungskern und an der HTTP-Fläche decken Anlegen, Validierung, Bearbeiten und Offline-Fall ab.

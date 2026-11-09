@@ -1,4 +1,4 @@
-"""CLI-Einstiegspunkt: Web-UI primär, Batch-Lauf als Zweitweg."""
+"""CLI-Einstiegspunkt: Web-UI primär, Import als Batch-Zweitweg."""
 
 from __future__ import annotations
 
@@ -8,17 +8,15 @@ import typer
 from rich.console import Console
 
 from . import __version__
-from .config import ConfigError, build_config
-from .llm.cache import LLMCache
-from .llm.client import OpenRouterClient
-from .pipeline import Pipeline, PipelineError, RunSummary
+from .io.input_scanner import SUPPORTED_SUFFIXES
+from .runtime import build_service
 from .web.server import run_server
 
 app = typer.Typer(
     add_completion=False,
     no_args_is_help=False,
     invoke_without_command=True,
-    help="Lokale Web-UI und Batch-Auswertung für Knobeln-Protokollbögen.",
+    help="Lokale Web-UI und Batch-Import für Knobeln-Protokollbögen.",
 )
 console = Console(stderr=True)
 
@@ -38,149 +36,78 @@ def web(
     db: Path | None = typer.Option(
         None, "--db", help="SQLite-Datei (Default: knobeln.db)"
     ),
+    scans: Path | None = typer.Option(
+        None, "--scans", help="Scan-Archiv (Default: data/scans)"
+    ),
     port: int = typer.Option(8000, "--port", help="Port der lokalen Web-UI"),
 ) -> None:
     """Startet die lokale Web-UI."""
-    run_server(db, port=port)
+    run_server(db, scan_dir=scans, port=port)
     raise typer.Exit()
 
 
-@app.command()
-def run(
-    input_dir: Path | None = typer.Option(
-        None, "--input", help="Eingangsordner (Default: input)"
+@app.command("import")
+def import_scans(
+    pfad: Path = typer.Argument(..., help="Ordner mit JPG-, PNG- oder PDF-Scans"),
+    db: Path | None = typer.Option(
+        None, "--db", help="SQLite-Datei (Default: knobeln.db)"
     ),
-    output_csv: Path | None = typer.Option(
-        None, "--output", help="CSV-Datei (Default: auswertung.csv)"
+    scans: Path | None = typer.Option(
+        None, "--scans", help="Scan-Archiv (Default: data/scans)"
     ),
-    review_dir: Path | None = typer.Option(
-        None, "--review", help="Review-Ordner (Default: review)"
-    ),
+    turnier: str = typer.Option("Import", "--turnier", help="Ziel-Turnier"),
+    durchgang: int = typer.Option(1, "--durchgang", help="Ziel-Durchgang 1–5"),
     model: str | None = typer.Option(None, "--model", help="OpenRouter-Modell"),
     reasoning: str | None = typer.Option(
         None, "--reasoning", help="Reasoning-Effort (Default: max)"
     ),
-    reset: bool = typer.Option(
-        False, "--reset", help="Neue Veranstaltung: bestehende CSV archivieren"
-    ),
-    yes: bool = typer.Option(False, "--yes", help="Rückfragen automatisch bestätigen"),
-    reprocess: bool = typer.Option(
-        False, "--reprocess", help="Bekannte Bogen_IDs erneut lesen"
-    ),
-    no_cache: bool = typer.Option(False, "--no-cache", help="LLM-Cache umgehen"),
-    keep_input: bool = typer.Option(
-        False, "--keep-input", help="Eingang nicht aufräumen"
-    ),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Nicht schreiben und nicht aufräumen"
-    ),
-    backup: bool = typer.Option(
-        False, "--backup", help="Vor dem Schreiben eine .bak-Kopie anlegen"
-    ),
     max_cost: float | None = typer.Option(
-        None,
-        "--max-cost",
-        help="Kostenlimit in USD pro Lauf; bricht vor dem CSV-Schreiben ab",
+        None, "--max-cost", help="Kostenlimit in USD pro Lauf"
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Ausführliche Ausgabe"),
 ) -> None:
-    """Wertet Scans als CSV aus (alter Batch-Pfad)."""
-    if reset and not yes:
-        if not typer.confirm("Bestehende CSV wirklich archivieren und neu beginnen?"):
-            reset = False
-
-    try:
-        config = build_config(
-            input_dir=input_dir,
-            output_csv=output_csv,
-            review_dir=review_dir,
-            model=model,
-            reasoning=reasoning,
-            reset=reset,
-            reprocess=reprocess,
-            no_cache=no_cache,
-            keep_input=keep_input,
-            dry_run=dry_run,
-            verbose=verbose,
-            backup=backup,
-            max_cost=max_cost,
-        )
-        api_key = config.require_api_key()
-    except ConfigError as exc:
-        console.print(f"[red]Fehler:[/red] {exc}")
-        raise typer.Exit(1) from exc
-
-    client = OpenRouterClient(
-        api_key=api_key,
-        model=config.model,
-        reasoning=config.reasoning,
-        cache=LLMCache(config.cache_dir),
-        no_cache=config.no_cache or config.reprocess,
+    """Importiert Scans aus einem Ordner in das Scan-Archiv und die Datenbank."""
+    if not pfad.exists():
+        console.print(f"[red]Fehler:[/red] Pfad nicht gefunden: {pfad}")
+        raise typer.Exit(1)
+    service = build_service(
+        db_path=db,
+        scan_dir=scans,
+        max_cost=max_cost,
+        model=model,
+        reasoning=reasoning,
     )
-
-    log = (lambda msg: console.print(f"[dim]{msg}[/dim]")) if verbose else None
-    pipeline = Pipeline(config, client, log=log)
-    try:
-        summary = pipeline.run()
-    except PipelineError as exc:
-        console.print(f"[red]Fehler:[/red] {exc}")
-        raise typer.Exit(1) from exc
-
-    _print_summary(summary, config)
-    raise typer.Exit(summary.exit_code)
-
-
-def _print_summary(summary: RunSummary, config) -> None:
-    console.print()
-    console.print("[bold]Zusammenfassung[/bold]")
+    ziel = service.ensure_import_context(turnier, durchgang)
+    dateien = sorted(
+        path
+        for path in pfad.rglob("*")
+        if path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES
+    )
+    importiert = 0
+    fehler: list[str] = []
+    for path in dateien:
+        if verbose:
+            console.print(f"[dim]importiere: {path}[/dim]")
+        try:
+            bogen = service.import_scan(
+                dateiname=path.name,
+                data=path.read_bytes(),
+                durchgang_id=ziel.id,
+            )
+            importiert += len(bogen)
+        except Exception as exc:  # noqa: BLE001 - Sammelreport statt Abbruch
+            fehler.append(f"{path.name}: {exc}")
+    verarbeitet = service.process_pending_jobs()
     console.print(
-        f"Dateien: {summary.files_total} "
-        f"(verarbeitet {summary.files_processed}, "
-        f"übersprungen {summary.files_skipped})"
+        f"Import: {importiert} Bogen in Turnier {turnier!r}, "
+        f"Durchgang {durchgang}; {verarbeitet} gelesen."
     )
-    console.print(
-        f"Seiten gelesen: {summary.pages_processed}; "
-        f"neue Spielergruppen: {summary.new_groups}; "
-        f"Duplikate: {summary.duplicates}; "
-        f"Konflikte: {summary.conflicts}"
-    )
-    console.print(
-        f"Offene Prüfpunkte: {summary.open_groups}; unleserlich: {summary.unreadable}"
-    )
-    console.print(
-        f"Eingang: {summary.deleted} gelöscht, "
-        f"{summary.moved} nach review, {summary.kept} behalten"
-    )
-    if summary.prompt_tokens or summary.completion_tokens or summary.cache_hits:
-        console.print(
-            f"Tokens: {summary.prompt_tokens} prompt / "
-            f"{summary.completion_tokens} completion "
-            f"({summary.reasoning_tokens} reasoning), "
-            f"ca. ${summary.cost_usd:.4f}; "
-            f"Cache-Treffer: {summary.cache_hits}"
-        )
-        if summary.file_costs:
-            console.print("Kosten pro Datei:")
-            for file_cost in summary.file_costs:
-                cache = " (Cache)" if file_cost.cached else ""
-                console.print(
-                    f"  {file_cost.quelle}: "
-                    f"{file_cost.prompt_tokens}/{file_cost.completion_tokens} "
-                    f"Tokens, ca. ${file_cost.cost_usd:.4f}{cache}"
-                )
-    console.print(f"CSV: {config.output_csv}")
-
-    if summary.warnings:
-        console.print()
+    if fehler:
         console.print("[yellow]Hinweise:[/yellow]")
-        for warning in summary.warnings:
-            console.print(f"  - {warning}")
-
-    if summary.cleanup_failures:
-        console.print()
-        console.print("[red]Aufräumen fehlgeschlagen:[/red]")
-        for failure in summary.cleanup_failures:
-            console.print(f"  - {failure}")
+        for eintrag in fehler:
+            console.print(f"  - {eintrag}")
+        raise typer.Exit(2)
+    raise typer.Exit(0)
 
 
 if __name__ == "__main__":

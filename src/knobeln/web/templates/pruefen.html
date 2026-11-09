@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Prüfen · Knobeln-Auswertung{% endblock %}
+
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Review by Exception</p>
+    <h1>Prüfen</h1>
+    <p class="lede">Nur die Fälle, die eine Entscheidung brauchen. Alles andere ist bereits erledigt.</p>
+  </div>
+</section>
+
+{% if not current_durchgang %}
+  <section class="panel empty-state">
+    <h2>Kein Durchgang ausgewählt</h2>
+    <p>Lege zuerst im Scannen-Bereich ein Turnier und einen Durchgang an.</p>
+    <a class="primary link-button" href="/scannen">Zum Scannen</a>
+  </section>
+{% elif not faelle %}
+  <section class="panel empty-state">
+    <h2>Alles geprüft. Keine offenen Fälle.</h2>
+    <p>Der Durchgang kann jetzt abgeschlossen oder die Rangliste angesehen werden.</p>
+    <div class="form-row">
+      <a class="primary link-button" href="/rangliste">Rangliste anzeigen</a>
+      {% if current_durchgang.status != 'abgeschlossen' %}
+        <form method="post" action="/durchgang/{{ current_durchgang.id }}/abschliessen" class="inline-form">
+          <button type="submit" class="secondary">Durchgang abschließen</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+{% else %}
+  <div class="review-layout">
+    <aside class="review-queue" aria-label="Prüffälle">
+      <div class="queue-head">
+        <h2 aria-live="polite">{{ faelle|length }} offene {{ 'Fall' if faelle|length == 1 else 'Fälle' }}</h2>
+        {% if undo_available %}
+          <form method="post" action="/pruefen/undo" class="inline-form">
+            <button type="submit" class="secondary">Letzte Korrektur rückgängig</button>
+          </form>
+        {% endif %}
+      </div>
+      <ol class="queue-list">
+        {% for fall in faelle %}
+          <li>
+            <a class="queue-item {% if selected and selected.id == fall.id %}selected{% endif %}" href="/pruefen?fall={{ fall.id }}">
+              <span class="severity severity-{{ fall.schweregrad }}"></span>
+              <span>
+                <strong>{{ fall.titel }}</strong>
+                <span class="queue-detail">{{ fall.detail }}</span>
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+      </ol>
+    </aside>
+
+    <section class="review-detail">
+      {% if not selected %}
+        <div class="empty-state"><h2>Wähle einen Prüffall aus der Queue.</h2></div>
+      {% elif selected.art == 'konflikt' %}
+        <div class="section-row">
+          <div>
+            <p class="eyebrow">Konflikt</p>
+            <h2>{{ selected.titel }}</h2>
+          </div>
+          <span class="badge badge-konflikt">offen</span>
+        </div>
+        <p class="muted">{{ selected.detail }} Beide Erfassungen bleiben erhalten.</p>
+        <div class="conflict-grid">
+          {% for stored in konflikt_gruppen %}
+            <article class="conflict-card">
+              <h3>Spieler {{ stored.gruppe.spieler_nr }}{% if stored.gruppe.spieler_name %} · {{ stored.gruppe.spieler_name }}{% endif %}</h3>
+              <p class="muted">Quelle: {{ 'manuell' if stored.quelle == 'manuell' else 'gescannt' }}</p>
+              <p class="number-lg">{{ stored.gruppe.summe_bogen if stored.gruppe.summe_bogen is not none else '–' }}</p>
+              {% if stored.bogen_id %}
+                <a class="secondary-link" href="/bogen/{{ stored.bogen_id }}/scan" target="_blank">Scan ansehen</a>
+              {% endif %}
+              <form method="post" action="/pruefen/aktion" class="section-gap">
+                <input type="hidden" name="aktion" value="konflikt">
+                <input type="hidden" name="konflikt_id" value="{{ konflikt.id }}">
+                <input type="hidden" name="gewaehlt_gruppe_id" value="{{ stored.id }}">
+                <button type="submit" class="primary">Diese Erfassung gilt</button>
+              </form>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        {% if bogen %}
+          <div class="section-row">
+            <div>
+              <p class="eyebrow">Bogen</p>
+              <h2>{{ bogen.dateiname }}</h2>
+              <p class="muted">Seite {{ bogen.seite }} · {{ bogen.status }}</p>
+            </div>
+            {% if bogen.job_status == 'fehler' %}
+              <form method="post" action="/pruefen/aktion" class="inline-form">
+                <input type="hidden" name="aktion" value="retry">
+                <input type="hidden" name="bogen_id" value="{{ bogen.id }}">
+                <button type="submit" class="secondary">Erneut lesen</button>
+              </form>
+            {% endif %}
+          </div>
+          <img class="scan" src="/bogen/{{ bogen.id }}/scan" alt="Scan von {{ bogen.dateiname }}">
+        {% endif %}
+
+        {% if selected.art == 'bogen_unklar' %}
+          <div class="empty-state section-gap">
+            <h2>Die Tabelle konnte nicht erkannt werden.</h2>
+            <p>Du kannst den Bogen erneut lesen lassen oder die Summen manuell erfassen.</p>
+            <div class="form-row">
+              <form method="post" action="/pruefen/aktion" class="inline-form">
+                <input type="hidden" name="aktion" value="retry">
+                <input type="hidden" name="bogen_id" value="{{ bogen.id }}">
+                <button type="submit" class="primary">Erneut lesen</button>
+              </form>
+              <a class="secondary-link" href="/scannen">Manuell erfassen</a>
+            </div>
+          </div>
+        {% elif selected.art == 'summe' %}
+          {% for stored in groups %}
+            {% if selected.gruppe_id == stored.id %}
+              <div class="sum-check section-gap">
+                <h3>Summencheck · Spieler {{ stored.gruppe.spieler_nr }}</h3>
+                <div class="sum-grid">
+                  <div><span class="muted">Geschrieben</span><strong class="number-lg">{{ stored.gruppe.summe_bogen if stored.gruppe.summe_bogen is not none else '–' }}</strong></div>
+                  <div><span class="muted">Berechnet</span><strong class="number-lg">{{ stored.gruppe.summe_berechnet if stored.gruppe.summe_berechnet is not none else '–' }}</strong></div>
+                  <div><span class="muted">Delta</span><strong class="number-lg {% if stored.gruppe.delta %}text-danger{% endif %}">{{ '%+d'|format(stored.gruppe.delta) if stored.gruppe.delta is not none else '–' }}</strong></div>
+                </div>
+                <p class="muted">{{ stored.gruppe.warnung_text }}</p>
+              </div>
+            {% endif %}
+          {% endfor %}
+          <div class="section-row section-gap">
+            <h3>Werte</h3>
+            <form method="post" action="/pruefen/aktion" class="inline-form">
+              <input type="hidden" name="aktion" value="bogen_bestaetigen">
+              <input type="hidden" name="bogen_id" value="{{ bogen.id }}">
+              <button type="submit" class="primary">Bogen trotz Abweichung bestätigen</button>
+            </form>
+          </div>
+          <table class="table">
+            <thead><tr><th>Spieler</th><th>Wurf</th><th>Rohwert</th><th>Wert</th><th>Hinweis</th></tr></thead>
+            <tbody>
+              {% for stored in groups %}
+                {% for i in range(12) %}
+                  <tr class="{% if selected.gruppe_id == stored.id %}selected-row{% endif %}">
+                    <td>{{ stored.gruppe.spieler_nr or '?' }}</td>
+                    <td class="number">{{ i + 1 }}</td>
+                    <td>{{ stored.gruppe.punkte_roh[i] }}</td>
+                    <td class="number">{{ stored.gruppe.punkte[i] if stored.gruppe.punkte[i] is not none else '–' }}</td>
+                    <td class="muted">{{ stored.gruppe.korrekturen[i] or stored.gruppe.llm_hinweise[i] or '' }}</td>
+                  </tr>
+                {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          {% for stored in groups %}
+            {% if selected.gruppe_id == stored.id %}
+              <div class="section-row section-gap">
+                <div>
+                  <p class="eyebrow">Prüffall</p>
+                  <h2>{{ selected.titel }}</h2>
+                  <p class="muted">{{ selected.detail }}</p>
+                </div>
+                <form method="post" action="/pruefen/aktion" class="inline-form">
+                  <input type="hidden" name="aktion" value="bogen_bestaetigen">
+                  <input type="hidden" name="bogen_id" value="{{ bogen.id }}">
+                  <button type="submit" class="secondary">Bogen bestätigen</button>
+                </form>
+              </div>
+              <table class="table">
+                <thead><tr><th>Wurf</th><th>Rohwert</th><th>Wert</th><th>Hinweis</th><th>Entscheidung</th></tr></thead>
+                <tbody>
+                  {% for i in range(12) %}
+                    <tr class="{% if selected.wurf_nr == i + 1 %}selected-row{% endif %}">
+                      <td class="number">{{ i + 1 }}</td>
+                      <td>{{ stored.gruppe.punkte_roh[i] }}</td>
+                      <td class="number">{{ stored.gruppe.punkte[i] if stored.gruppe.punkte[i] is not none else '–' }}</td>
+                      <td class="muted">{{ stored.gruppe.korrekturen[i] or stored.gruppe.llm_hinweise[i] or '' }}</td>
+                      <td>
+                        {% if selected.wurf_nr == i + 1 %}
+                          <div class="form-row">
+                            <form method="post" action="/pruefen/aktion" class="inline-form">
+                              <input type="hidden" name="aktion" value="uebernehmen">
+                              <input type="hidden" name="gruppe_id" value="{{ stored.id }}">
+                              <input type="hidden" name="wurf_nr" value="{{ i + 1 }}">
+                              <button type="submit" class="secondary">Übernehmen</button>
+                            </form>
+                            <form method="post" action="/pruefen/aktion" class="inline-form">
+                              <input type="hidden" name="aktion" value="korrigieren">
+                              <input type="hidden" name="gruppe_id" value="{{ stored.id }}">
+                              <input type="hidden" name="wurf_nr" value="{{ i + 1 }}">
+                              <input type="number" name="wert" min="0" max="200" step="5" required>
+                              <button type="submit" class="primary">Korrigieren</button>
+                            </form>
+                            <form method="post" action="/pruefen/aktion" class="inline-form">
+                              <input type="hidden" name="aktion" value="unleserlich">
+                              <input type="hidden" name="gruppe_id" value="{{ stored.id }}">
+                              <input type="hidden" name="wurf_nr" value="{{ i + 1 }}">
+                              <button type="submit" class="secondary">Unleserlich</button>
+                            </form>
+                          </div>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              <div class="sum-check section-gap">
+                <h3>Summencheck</h3>
+                <p>Geschrieben <strong class="number">{{ stored.gruppe.summe_bogen if stored.gruppe.summe_bogen is not none else '–' }}</strong> · Berechnet <strong class="number">{{ stored.gruppe.summe_berechnet if stored.gruppe.summe_berechnet is not none else '–' }}</strong> · Delta <strong class="number {% if stored.gruppe.delta %}text-danger{% endif %}">{{ '%+d'|format(stored.gruppe.delta) if stored.gruppe.delta is not none else '–' }}</strong></p>
+                <p class="muted">{{ stored.gruppe.warnung_text }}</p>
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endif %}
+    </section>
+  </div>
+{% endif %}
+{% endblock %}

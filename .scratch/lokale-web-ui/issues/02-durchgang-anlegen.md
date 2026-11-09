@@ -6,11 +6,11 @@
 
 **Blocked by:** 01 — Turnier anlegen und lokale Web-App starten
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Ein Turnier kann die Durchgänge 1–5 enthalten; ein Durchgang lässt sich anlegen und auswählen.
-- [ ] Die Top-Bar zeigt das aktuelle Turnier und die Durchgangsauswahl.
-- [ ] Der Status „offen“ oder „abgeschlossen“ ist pro Durchgang sichtbar.
-- [ ] Ohne Durchgang erscheint ein Leerzustand mit CTA „Durchgang anlegen“.
-- [ ] Ein Fortschrittsplatzhalter („0 von 0 Bögen“) ist sichtbar und wird in späteren Tickets gefüllt.
-- [ ] Tests am Anwendungskern und an der HTTP-Fläche decken Anlegen, Auswählen und Leerzustand ab.
+- [x] Ein Turnier kann die Durchgänge 1–5 enthalten; ein Durchgang lässt sich anlegen und auswählen.
+- [x] Die Top-Bar zeigt das aktuelle Turnier und die Durchgangsauswahl.
+- [x] Der Status „offen“ oder „abgeschlossen“ ist pro Durchgang sichtbar.
+- [x] Ohne Durchgang erscheint ein Leerzustand mit CTA „Durchgang anlegen“.
+- [x] Ein Fortschrittsplatzhalter („0 von 0 Bögen“) ist sichtbar und wird in späteren Tickets gefüllt.
+- [x] Tests am Anwendungskern und an der HTTP-Fläche decken Anlegen, Auswählen und Leerzustand ab.

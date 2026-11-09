@@ -6,7 +6,9 @@ from pathlib import Path
 from conftest import FakeLLMClient
 from typer.testing import CliRunner
 
+from knobeln.application import KnobelnService
 from knobeln.cli import app
+from knobeln.store import SQLiteStore
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 
@@ -15,7 +17,7 @@ def test_help():
     result = CliRunner().invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "web" in result.output
-    assert "run" in result.output
+    assert "import" in result.output
 
 
 def test_version():
@@ -24,51 +26,44 @@ def test_version():
     assert "knobeln-auswertung" in result.output
 
 
-def test_fehlender_api_key(monkeypatch):
-    monkeypatch.setattr("knobeln.config.load_dotenv", lambda *args, **kwargs: None)
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    result = CliRunner().invoke(app, ["run", "--input", "input"])
-    assert result.exit_code == 1
-    assert "OPENROUTER_API_KEY" in result.output
-
-
-def test_cli_mit_fake_client(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("OPENROUTER_API_KEY", "dummy")
+def test_import_command(tmp_path: Path, monkeypatch):
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     shutil.copy(EXAMPLES / "img1.jpg", input_dir / "img1.jpg")
-    output = tmp_path / "auswertung.csv"
-    review = tmp_path / "review"
-
-    fake = FakeLLMClient()
-    monkeypatch.setattr("knobeln.cli.OpenRouterClient", lambda **kwargs: fake)
+    service = KnobelnService(
+        SQLiteStore(tmp_path / "knobeln.db"),
+        llm_client=FakeLLMClient(),
+        scan_dir=tmp_path / "scans",
+    )
+    monkeypatch.setattr("knobeln.cli.build_service", lambda **kwargs: service)
 
     result = CliRunner().invoke(
         app,
         [
-            "run",
-            "--input",
+            "import",
             str(input_dir),
-            "--output",
-            str(output),
-            "--review",
-            str(review),
-            "--model",
-            "deepseek/deepseek-v4.1-flash",
-            "--reasoning",
-            "max",
+            "--db",
+            str(tmp_path / "knobeln.db"),
+            "--scans",
+            str(tmp_path / "scans"),
+            "--turnier",
+            "Testturnier",
         ],
     )
+
     assert result.exit_code == 0, result.output
-    assert output.exists()
-    assert "Zusammenfassung" in result.output
+    assert "1 Bogen" in result.output
+    turnier = service.list_turniere()[0]
+    durchgang = service.list_durchgaenge(turnier.id)[0]
+    assert len(service.list_bogen(durchgang.id)) == 1
 
 
 def test_web_command_startet_web_ui(tmp_path: Path, monkeypatch):
     calls: dict[str, object] = {}
 
-    def fake_run_server(db_path=None, *, port=8000):
+    def fake_run_server(db_path=None, *, scan_dir=None, port=8000):
         calls["db_path"] = db_path
+        calls["scan_dir"] = scan_dir
         calls["port"] = port
 
     monkeypatch.setattr("knobeln.cli.run_server", fake_run_server)
@@ -83,7 +78,7 @@ def test_web_command_startet_web_ui(tmp_path: Path, monkeypatch):
 def test_ohne_argument_startet_web(tmp_path: Path, monkeypatch):
     calls: dict[str, object] = {}
 
-    def fake_run_server(db_path=None, *, port=8000):
+    def fake_run_server(db_path=None, *, scan_dir=None, port=8000):
         calls["db_path"] = db_path
 
     monkeypatch.setattr("knobeln.cli.run_server", fake_run_server)
@@ -105,7 +100,11 @@ def test_server_bindet_nur_localhost(tmp_path: Path, monkeypatch):
 
     from knobeln.web.server import run_server
 
-    run_server(tmp_path / "knobeln.db", port=8765)
+    run_server(
+        tmp_path / "knobeln.db",
+        scan_dir=tmp_path / "scans",
+        port=8765,
+    )
 
     assert calls["host"] == "127.0.0.1"
     assert calls["port"] == 8765

@@ -6,12 +6,12 @@
 
 **Blocked by:** 06 — Prüfentscheidungen; 09 — Rangliste und Gesamtwertung; 10 — Durchgang abschließen und wieder öffnen; 12 — Offline- und Verbindungsbetrieb
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Ein Hilfe-Dialog öffnet mit `?`, schließt mit `Esc` und zeigt drei Schritte, Tastenkürzel und Verbindungsstatus.
-- [ ] Die Prüf-Queue ist vollständig per Tastatur bedienbar; die aktuelle Auswahl wird per `aria-live` angekündigt.
-- [ ] Fokus ist sichtbar; Ziele sind mindestens 44 × 44 px; es gibt keine Icon-only-Buttons ohne Label.
-- [ ] Status wird immer über Text plus Farbe gezeigt.
-- [ ] Die App bleibt bei 200-%-Zoom und in einem schmalen Tablet-Browserfenster benutzbar.
-- [ ] `prefers-reduced-motion` wird respektiert; es gibt keine Pflichtanimation.
-- [ ] Ein Accessibility-Durchgang ist dokumentiert; die relevanten Punkte sind durch Tests oder einen Smoke-Check abgedeckt.
+- [x] Ein Hilfe-Dialog öffnet mit `?`, schließt mit `Esc` und zeigt drei Schritte, Tastenkürzel und Verbindungsstatus.
+- [x] Die Prüf-Queue ist vollständig per Tastatur bedienbar; die aktuelle Auswahl wird per `aria-live` angekündigt.
+- [x] Fokus ist sichtbar; Ziele sind mindestens 44 × 44 px; es gibt keine Icon-only-Buttons ohne Label.
+- [x] Status wird immer über Text plus Farbe gezeigt.
+- [x] Die App bleibt bei 200-%-Zoom und in einem schmalen Tablet-Browserfenster benutzbar.
+- [x] `prefers-reduced-motion` wird respektiert; es gibt keine Pflichtanimation.
+- [x] Ein Accessibility-Durchgang ist dokumentiert; die relevanten Punkte sind durch Tests oder einen Smoke-Check abgedeckt.

@@ -9,6 +9,12 @@ input/*
 review/*
 !review/.gitkeep
 auswertung.csv
+knobeln.db
+knobeln.db-*
+*.db-wal
+*.db-shm
 *.bak
 *.bak.csv
+*.xlsx
+data/
 .cache/

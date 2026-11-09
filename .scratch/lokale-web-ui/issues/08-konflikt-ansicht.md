@@ -6,12 +6,12 @@
 
 **Blocked by:** 06 — Prüfentscheidungen; 07 — Manuelle Durchgangsergebnisse
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Ein Konflikt entsteht bei gleichem Spieler und Durchgang mit unterschiedlichen Ergebnissen, sowohl Scan-gegen-Scan als auch Manuell-gegen-Scan.
-- [ ] Die Konflikt-Ansicht zeigt beide Erfassungen nebeneinander: Bogen, Werte, Summe und Status.
-- [ ] Die Turnierleitung wählt eine Erfassung; die andere wird als „verworfen“ markiert, bleibt sichtbar und wird nicht gelöscht.
-- [ ] Die Rangliste verwendet nur die gewählte Erfassung.
-- [ ] Ein offener Konflikt erscheint als Prüffall und blockiert „Durchgang abschließen“.
-- [ ] Ein späterer abweichender Scan öffnet einen geprüften Konflikt wieder.
-- [ ] Tests am Anwendungskern und an der HTTP-Fläche decken beide Konfliktarten, Auswahl, Verwerfen und Wiederöffnen ab.
+- [x] Ein Konflikt entsteht bei gleichem Spieler und Durchgang mit unterschiedlichen Ergebnissen, sowohl Scan-gegen-Scan als auch Manuell-gegen-Scan.
+- [x] Die Konflikt-Ansicht zeigt beide Erfassungen nebeneinander: Bogen, Werte, Summe und Status.
+- [x] Die Turnierleitung wählt eine Erfassung; die andere wird als „verworfen“ markiert, bleibt sichtbar und wird nicht gelöscht.
+- [x] Die Rangliste verwendet nur die gewählte Erfassung.
+- [x] Ein offener Konflikt erscheint als Prüffall und blockiert „Durchgang abschließen“.
+- [x] Ein späterer abweichender Scan öffnet einen geprüften Konflikt wieder.
+- [x] Tests am Anwendungskern und an der HTTP-Fläche decken beide Konfliktarten, Auswahl, Verwerfen und Wiederöffnen ab.

@@ -1,7 +1,7 @@
 [project]
 name = "knobeln-auswertung"
 version = "0.1.0"
-description = "CLI zur Auswertung gescannter Knobeln-Protokollbögen"
+description = "Lokale Web-App zur Auswertung gescannter Knobeln-Protokollbögen"
 requires-python = ">=3.13"
 dependencies = [
     "openai>=1.60",
@@ -15,6 +15,7 @@ dependencies = [
     "uvicorn>=0.54.0",
     "jinja2>=3.1.6",
     "python-multipart>=0.0.33",
+    "openpyxl>=3.1.5",
 ]
 
 [dependency-groups]
@@ -53,3 +54,5 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/knobeln/cli.py" = ["B008"]
+"src/knobeln/store.py" = ["E501"]
+"src/knobeln/web/app.py" = ["B008"]

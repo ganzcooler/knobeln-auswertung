@@ -11,10 +11,6 @@
   </div>
 </section>
 
-{% if error %}
-  <p class="error" role="alert">{{ error }}</p>
-{% endif %}
-
 <section class="panel">
   <h2>Turniere</h2>
   {% if turniere %}
@@ -50,10 +46,141 @@
 </section>
 
 {% if current_turnier %}
-  <section class="panel drop-zone">
-    <p class="eyebrow">Durchgang</p>
-    <h2>{{ current_turnier.name }}</h2>
-    <p>Noch keine Bögen. Die Drop-Zone für Scans folgt im nächsten Schritt.</p>
+  <section class="panel">
+    <div class="section-row">
+      <div>
+        <p class="eyebrow">Durchgang</p>
+        <h2>Durchgang {{ current_durchgang.nummer if current_durchgang else '–' }}</h2>
+      </div>
+      {% if durchgaenge %}
+        <form method="post" action="/durchgang/oeffnen" class="inline-form">
+          <label for="durchgang-auswahl" class="visually-hidden">Durchgang auswählen</label>
+          <select id="durchgang-auswahl" name="durchgang_id" onchange="this.form.submit()">
+            {% for durchgang in durchgaenge %}
+              <option value="{{ durchgang.id }}" {% if current_durchgang and current_durchgang.id == durchgang.id %}selected{% endif %}>
+                Durchgang {{ durchgang.nummer }} · {{ durchgang.status }}
+              </option>
+            {% endfor %}
+          </select>
+        </form>
+      {% endif %}
+    </div>
+
+    {% if current_durchgang %}
+      {% if current_durchgang.status == 'abgeschlossen' %}
+        <p class="status-banner status-confirmed">Dieser Durchgang ist abgeschlossen. Zum Ändern zuerst in der Rangliste wieder öffnen.</p>
+      {% else %}
+        <form method="post" action="/bogen/upload" enctype="multipart/form-data" class="drop-zone form">
+          <label for="dateien" class="drop-title">Bögen hier ablegen</label>
+          <p class="muted">JPG, PNG oder PDF. Du kannst mehrere Dateien gleichzeitig auswählen.</p>
+          <input id="dateien" type="file" name="dateien" accept=".jpg,.jpeg,.png,.pdf" multiple required>
+          <label class="checkbox-row">
+            <input type="checkbox" name="force" value="true">
+            Duplikat behalten (nur wenn der Bogen bewusst noch einmal erfasst wird)
+          </label>
+          <button type="submit" class="primary">Dateien auswählen</button>
+        </form>
+      {% endif %}
+
+      <div class="section-row section-gap">
+        <h2>Stapel</h2>
+        {% if prueffall_count %}
+          <a class="primary link-button" href="/pruefen">Weiter zum Prüfen ({{ prueffall_count }})</a>
+        {% endif %}
+      </div>
+      {% if bogen_liste %}
+        <ul class="bogen-liste">
+          {% for bogen in bogen_liste %}
+            <li class="bogen-zeile">
+              <div>
+                <strong>{{ bogen.dateiname }}</strong>
+                {% if bogen.seite > 1 %}<span class="muted">· Seite {{ bogen.seite }}</span>{% endif %}
+                <div class="muted">Bogen-ID {{ bogen.bogen_id }}</div>
+              </div>
+              <div class="bogen-status">
+                {% if bogen.job_prompt_tokens or bogen.job_completion_tokens %}
+                  <span class="muted">{{ bogen.job_prompt_tokens }} + {{ bogen.job_completion_tokens }} Tokens · ${{ '%.4f'|format(bogen.job_cost_usd) }}</span>
+                {% endif %}
+                <span class="badge badge-{{ bogen.job_status }}">{{ bogen.job_status }}</span>
+                {% if bogen.job_status == 'fehler' %}
+                  <form method="post" action="/bogen/{{ bogen.id }}/retry" class="inline-form">
+                    <button type="submit" class="secondary">Erneut lesen</button>
+                  </form>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">
+          <h3>Noch keine Bögen</h3>
+          <p>Lege die Scans für diesen Durchgang hier ab.</p>
+        </div>
+      {% endif %}
+
+      <h2 class="section-gap">Manuelle Durchgangsergebnisse</h2>
+      <p class="muted">Nur nötig, wenn keine brauchbare Extraktion möglich ist. Pro Spieler reicht die Summe des Durchgangs.</p>
+      {% if manual_groups %}
+        <table class="table">
+          <thead>
+            <tr><th>Spieler-Nr.</th><th>Name</th><th>Summe</th><th>Quelle</th><th>Bearbeiten</th></tr>
+          </thead>
+          <tbody>
+            {% for stored in manual_groups %}
+              <tr>
+                <td class="number">{{ stored.gruppe.spieler_nr }}</td>
+                <td>{{ stored.gruppe.spieler_name }}</td>
+                <td class="number">{{ stored.gruppe.summe_bogen }}</td>
+                <td><span class="badge badge-manuell">manuell</span></td>
+                <td>
+                  {% if current_durchgang.status != 'abgeschlossen' %}
+                    <form method="post" action="/manuell/{{ stored.id }}/bearbeiten" class="inline-form">
+                      <input type="text" name="spieler_name" value="{{ stored.gruppe.spieler_name }}" aria-label="Name">
+                      <input type="number" name="summe" value="{{ stored.gruppe.summe_bogen }}" min="0" max="2400" step="5" aria-label="Summe" required>
+                      <button type="submit" class="secondary">Speichern</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      {% if current_durchgang.status != 'abgeschlossen' %}
+        <form method="post" action="/manuell" class="form form-row section-gap">
+          <label for="manuell-nr">Spieler-Nr.</label>
+          <input id="manuell-nr" type="text" name="spieler_nr" required>
+          <label for="manuell-name">Name (optional)</label>
+          <input id="manuell-name" type="text" name="spieler_name">
+          <label for="manuell-summe">Summe</label>
+          <input id="manuell-summe" type="number" name="summe" min="0" max="2400" step="5" required>
+          <button type="submit" class="secondary">Manuell speichern</button>
+        </form>
+      {% endif %}
+      {% if durchgaenge|length < 5 %}
+        <form method="post" action="/durchgang" class="form form-row section-gap">
+          <label for="weiterer-durchgang">Weiteren Durchgang anlegen</label>
+          <select id="weiterer-durchgang" name="nummer">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option>
+          </select>
+          <button type="submit" class="secondary">Durchgang anlegen</button>
+        </form>
+      {% endif %}
+    {% else %}
+      <div class="empty-state">
+        <h3>Noch kein Durchgang</h3>
+        <p>Lege den ersten Durchgang an.</p>
+      </div>
+      <form method="post" action="/durchgang" class="form form-row section-gap">
+        <label for="nummer">Durchgang</label>
+        <select id="nummer" name="nummer">
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5</option>
+        </select>
+        <button type="submit" class="primary">Durchgang anlegen</button>
+      </form>
+    {% endif %}
   </section>
 {% else %}
   <section class="panel empty-state">

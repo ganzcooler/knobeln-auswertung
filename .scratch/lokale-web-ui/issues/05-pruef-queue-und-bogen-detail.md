@@ -6,11 +6,11 @@
 
 **Blocked by:** 04 — Scan wird gelesen: Hintergrund-Extraktion
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Prüffälle werden aus Status-Codes und LLM-Hinweisen abgeleitet; die Queue ist nach Schweregrad sortiert und filterbar.
-- [ ] Der erste offene Fall ist ausgewählt; ohne offene Fälle erscheint ein Leerzustand mit dem nächsten Schritt.
-- [ ] Das Bogen-Detail zeigt den ganzen Scan mit Zoom und Pan, die Wertetabelle und den Summencheck.
-- [ ] Rohwert, erkannter Wert, Vorschlag und zulässige Werte sind unterscheidbar.
-- [ ] Ein Bogen ohne offene Prüffälle lässt sich in einem Klick bestätigen; saubere Bögen werden nicht automatisch bestätigt.
-- [ ] Tests am Anwendungskern und an der HTTP-Fläche decken Ableitung, Sortierung, Auswahl und Bestätigen ab.
+- [x] Prüffälle werden aus Status-Codes und LLM-Hinweisen abgeleitet; die Queue ist nach Schweregrad sortiert und filterbar.
+- [x] Der erste offene Fall ist ausgewählt; ohne offene Fälle erscheint ein Leerzustand mit dem nächsten Schritt.
+- [x] Das Bogen-Detail zeigt den ganzen Scan mit Zoom und Pan, die Wertetabelle und den Summencheck.
+- [x] Rohwert, erkannter Wert, Vorschlag und zulässige Werte sind unterscheidbar.
+- [x] Ein Bogen ohne offene Prüffälle lässt sich in einem Klick bestätigen; saubere Bögen werden nicht automatisch bestätigt.
+- [x] Tests am Anwendungskern und an der HTTP-Fläche decken Ableitung, Sortierung, Auswahl und Bestätigen ab.

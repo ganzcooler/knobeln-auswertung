@@ -1,9 +1,15 @@
 # Knobeln-Auswertung
 
-CLI zur Auswertung gescannter Knobeln-Protokollbögen. Ein Vision-LLM liest die
-handgeschriebenen Punkte, die App prüft sie gegen die gedruckte Wertung und
-pflegt eine einzige Excel-pivotfähige CSV. Die selbst gerechnete Summenzeile
-ist eine Kontrolle: Abweichungen werden markiert, nie automatisch korrigiert.
+Lokale Web-App zur Auswertung gescannter Knobeln-Protokollbögen. Ein Vision-LLM
+liest die handgeschriebenen Punkte, die App prüft sie gegen die gedruckte
+Wertung und führt die Turnierleitung durch **Scannen → Prüfen → Rangliste**.
+Die selbst gerechnete Summenzeile bleibt bei gescannten Bögen eine Kontrolle:
+Abweichungen werden markiert, nie automatisch korrigiert.
+
+Die App läuft nur auf `127.0.0.1`. SQLite ist der Zustand; Original-Scans liegen
+dauerhaft im Scan-Archiv. Eine CSV gibt es nicht mehr. Wenn am Veranstaltungstag
+die LLM-Verbindung fehlt, können die Summen pro Spieler und Durchgang manuell
+erfasst werden.
 
 ## Installation
 
@@ -12,143 +18,68 @@ Voraussetzung: Python 3.13 und [`uv`](https://docs.astral.sh/uv/).
 ```bash
 uv sync
 cp .env.example .env
-# OPENROUTER_API_KEY in .env eintragen
+# OPENROUTER_API_KEY in .env eintragen (nur für die Extraktion nötig)
 ```
 
 Standardmodell ist `deepseek/deepseek-v4.1-flash` mit maximalem Reasoning.
 
-## Benutzung
-
-Neue Scans in `input/` legen (JPG, PNG oder PDF) und ausführen:
+## Start
 
 ```bash
 uv run knobeln
 ```
 
-Ablauf:
+Öffnet die lokale Web-UI auf <http://127.0.0.1:8000>. `uv run knobeln web` ist
+der explizite Alias.
 
-1. Alle Dateien in `input/` werden gelesen.
-2. Jede Seite wird als ein Bogen ausgewertet.
-3. Die Ergebnisse werden in `auswertung.csv` gemerged.
-4. Saubere Scans werden gelöscht.
-5. Auffällige Scans (Summenabweichung, ungültige/fehlende Werte, Konflikt,
-   unleserlich) werden nach `review/` verschoben.
-6. Technisch fehlgeschlagene Dateien bleiben in `input/` für den nächsten Lauf.
-
-Für eine neue Veranstaltung `--reset` verwenden (archiviert die alte CSV) oder
-eine andere `--output`-Datei angeben.
-
-Wichtige Optionen:
+Optionen:
 
 ```text
---input PATH        Eingangsordner (Default: input)
---output PATH       CSV-Datei (Default: auswertung.csv)
---review PATH       Review-Ordner (Default: review)
---model MODEL       OpenRouter-Modell
---reasoning EFFORT  Reasoning-Effort (Default: max)
---reset             Neue Veranstaltung: bestehende CSV archivieren
---reprocess         Bekannte Bogen_IDs erneut lesen (umgeht auch den Cache)
---no-cache          LLM-Cache umgehen
---keep-input        Eingang nicht aufräumen (Debugging)
---dry-run           Nicht schreiben und nicht aufräumen
---backup            Vor dem Schreiben auswertung.csv.bak anlegen
---max-cost USD      Kostenlimit pro Lauf (bricht vor dem CSV-Schreiben ab)
---verbose           Ausführliche Ausgabe
---version           Version anzeigen
+--db PATH       SQLite-Datei (Default: knobeln.db)
+--scans PATH    Scan-Archiv (Default: data/scans)
+--port PORT     Port der lokalen Web-UI (Default: 8000)
 ```
 
-Exit-Codes: `0` sauber, `2` offene Prüfpunkte oder Dateien behalten,
-`1` fataler Fehler (z. B. CSV gesperrt, API-Key fehlt).
+Die App startet auch ohne API-Key und ohne Internet. Nur die Extraktion wartet
+dann; Prüfen, manuelle Erfassung, Rangliste und XLSX-Export funktionieren
+vollständig lokal.
 
-## CSV und Pivot in Excel
+## Ablauf
 
-Die CSV ist UTF-8 mit BOM und wird mit Semikolon geschrieben. Beim Einlesen
-wird auch ein komma-getrennter Excel-Zwischenstand erkannt. In Excel:
+1. **Turnier und Durchgang** anlegen. Ein Turnier enthält die Durchgänge 1–5.
+2. **Scannen:** JPG, PNG oder PDF per Drag-and-drop oder Dateiauswahl ablegen.
+   Die Originale bleiben im Scan-Archiv; die Extraktion läuft als
+   Hintergrundjob. Duplikate werden erkannt.
+3. **Prüfen:** Die Queue zeigt nur die Fälle, die eine Entscheidung brauchen:
+   Summenfehler, unzulässige oder fehlende Werte, unklare Ziffern, Konflikte
+   und Kopfzeilen. Der Scan bleibt neben den Werten sichtbar.
+4. **Manuell erfassen:** Fehlt die LLM-Verbindung, reicht pro Spieler und
+   Durchgang eine Summe. Manuelle Ergebnisse sind sichtbar als „manuell“
+   markiert und zählen für Rangliste und Abschluss.
+5. **Rangliste:** Durchgang und Gesamt, geteilter Rang bei Gleichstand,
+   Vollbild für den Beamer und XLSX-Export.
+6. **Durchgang abschließen:** Nur ohne offene Prüffälle. Der Durchgang wird
+   gesperrt und kann mit Bestätigung wieder geöffnet werden.
 
-1. **Daten → Aus Text/CSV** wählen, Datei `auswertung.csv` importieren.
-2. Trennzeichen `;`, Kodierung UTF-8, erste Zeile als Kopfzeile.
-3. Pivot erstellen: Zeilen = `Spieler_Nr` (optional `Spieler_Name`),
-   Spalten = `Durchgang_Nr`, Werte = Summe von `Punkte`.
+## Batch-Import
 
-Die CSV ist die dauerhafte Quelle. Excel beobachtet sie nicht von selbst:
-Nach jedem App-Lauf **Alle aktualisieren** klicken (oder ein Refresh-Intervall
-setzen). Vor dem App-Lauf die CSV in Excel schließen, sonst kann Windows die
-Datei sperren.
-
-## Korrigieren
-
-- `Punkte` ist die Spalte, die in die Pivot eingeht. Fehlerhafte Werte dort
-  direkt korrigieren.
-- `Summe_Bogen` ist die gelesene Summenzeile; bei Bedarf ebenfalls korrigieren.
-- `Punkte_Roh` und `Summe_Bogen_Roh` sind die rohen LLM-Lesungen. Nicht
-  bearbeiten, sie dienen der Nachvollziehbarkeit.
-- `Korrektur` wird von der App gefüllt (z. B. `8.5 -> 85`).
-- `Geprueft=ja` setzen, wenn ein Konflikt angesehen wurde und der bestehende
-  Wert bleiben soll. Sonst öffnet die App denselben Konflikt beim nächsten Lauf
-  erneut.
-- `Kommentar` ist für eigene Notizen und bleibt pro Zeile erhalten.
-- Gruppenfelder (`Summe_Bogen`, `Spieler_Name`, `Geprueft`) stehen auf allen
-  zwölf Zeilen eines Spielers; die App liest den ersten nicht-leeren Wert. Am
-  einfachsten die erste Zeile (`Wurf_Nr=1`) ändern oder den Wert in Excel nach
-  unten füllen.
-- `Namenskonflikt` wird von der App gefüllt. Nach Korrektur der Namen die
-  Spalte leeren oder `Geprueft=ja` setzen.
-- Nach der Korrektur `uv run knobeln` erneut ausführen (auch ohne neue Scans):
-  Die abgeleiteten Spalten `Summe_Berechnet`, `Delta`, `Status` und `Warnung`
-  werden neu berechnet.
-- Ein unleserlicher Bogen bleibt als `bogen_unklar`-Zeile in der CSV. Wenn du
-  denselben Scan erneut lesen willst, die Datei aus `review/` zurück nach
-  `input/` legen und `--reprocess` verwenden. Bei einem neuen Scan mit anderer
-  Datei die alte Platzhalterzeile in der CSV löschen.
-
-## Spalten
-
-| Spalte | Bedeutung |
-| --- | --- |
-| `Bogen_ID` | Hash der Quelle + Seite |
-| `Quelle` | ursprünglicher Pfad im Eingang |
-| `Seite` | Seite der Quelle |
-| `Spieler_Position` | Spalte auf dem Bogen (1–4) |
-| `Durchgang_Nr` | Durchgang 1–5 |
-| `Spieler_Nr` | Spieler-Nummer |
-| `Spieler_Name` | optionaler Name |
-| `Wurf_Nr` | Zeile 1–12 |
-| `Punkte` | finaler Punktwert (Pivot-Wert) |
-| `Punkte_Roh` | rohe LLM-Lesung |
-| `Korrektur` | App-Notiz zur Normalisierung |
-| `Summe_Bogen_Roh` | rohe LLM-Lesung der Summenzeile |
-| `Summe_Bogen` | gelesene/korrigierte Summenzeile |
-| `Summe_Berechnet` | Summe der zwölf `Punkte` |
-| `Delta` | `Summe_Bogen - Summe_Berechnet` |
-| `Status` | Status-Codes, mehrere mit \| getrennt |
-| `Warnung` | Klartext-Warnung |
-| `Konflikt` | `ja`/`nein` |
-| `Konflikt_Detail` | Unterschiede des Konflikts |
-| `Namenskonflikt` | konkurrierende Namen (z. B. `A \| B`) |
-| `Geprueft` | `ja`/`nein` |
-| `Kommentar` | freie Notiz pro Zeile |
-
-## Status-Codes
-
-`ok`, `bogen_unklar`, `durchgang_unklar`, `spieler_unklar`, `spieler_doppelt`,
-`wert_fehlt`, `wert_ungueltig`, `wert_korrigiert`, `summe_fehlt`,
-`summe_ungueltig`, `summe_unvollstaendig`, `summe_abweichung`,
-`summe_korrigiert`, `name_konflikt`, `konflikt`, `identitaet_konflikt`,
-`geprueft`.
-
-## Gültige Punktwerte
-
-Die gedruckte Wertung ist maßgeblich und für das gesamte Spiel konstant:
-
-```text
-0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75,
-80, 85, 90, 95, 100, 105, 110, 120, 130, 140, 150, 160, 170, 200
+```bash
+uv run knobeln import ./scans --turnier "Sommerfest 2026" --durchgang 1
 ```
 
-`0` gilt für `/` oder eine geschriebene 0. Leere Zellen sind fehlend.
-Trennzeichen-Artefakte wie `8.5` werden zu 85 normalisiert; es wird nicht
-gerundet und nicht geklemmt. Die `*`-Markierung der Wertung spielt für die
-Auswertung keine Rolle.
+Der Import legt Turnier und Durchgang bei Bedarf an, kopiert die Scans ins
+Archiv und verarbeitet sie mit demselben Anwendungskern wie die Web-UI.
+`--model`, `--reasoning`, `--max-cost`, `--db` und `--scans` werden unterstützt.
+
+## Daten
+
+- **SQLite:** `knobeln.db` (per `--db` änderbar) ist der einzige Zustand.
+- **Scan-Archiv:** `data/scans/` (per `--scans` änderbar); Dateien werden nach
+  der Verarbeitung nicht gelöscht.
+- **Sicherung:** Vor dem Löschen eines Turniers oder dem Wiederöffnen eines
+  Durchgangs legt die App eine SQLite-Kopie an.
+- Alte `auswertung.csv`-Daten und der frühere `review/`-Ordner werden nicht
+  importiert.
 
 ## Entwicklung
 
@@ -161,18 +92,15 @@ uv run pre-commit install
 ```
 
 Die Tests nutzen einen Fake-LLM-Client und die Beispiele aus `examples/`.
-Der echte Modell-Smoke-Test ist kostenpflichtig und läuft nur manuell:
+Der echte Modelltest ist kostenpflichtig und läuft nur manuell:
 
 ```bash
-./scripts/smoke_test.sh        # drei Beispiele + Golden-Vergleich
-uv run pytest --run-manual     # derselbe Test über Pytest
+uv run pytest --run-manual
 ```
-
-Die Checks laufen lokal über `pre-commit` bzw. `scripts/check.sh`; es gibt keinen GitHub-Actions-Workflow. Der echte Modelltest läuft nie in `pre-commit`.
 
 ## Dokumentation
 
 - [`GLOSSARY.md`](GLOSSARY.md) — Begriffe
 - [`docs/adr/`](docs/adr/) — Architekturentscheidungen
-- [`.scratch/knobeln-auswertung/spec.md`](.scratch/knobeln-auswertung/spec.md) — Spezifikation
-- [`.scratch/knobeln-auswertung/issues/`](.scratch/knobeln-auswertung/issues/) — Umsetzungstickets
+- [`.scratch/lokale-web-ui/spec.md`](.scratch/lokale-web-ui/spec.md) — Spezifikation
+- [`.scratch/lokale-web-ui/issues/`](.scratch/lokale-web-ui/issues/) — Umsetzungstickets

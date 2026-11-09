@@ -6,12 +6,12 @@
 
 **Blocked by:** 08 — Konflikt-Ansicht
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Die Durchgangsrangliste sortiert nach Ergebnis und zeigt geteilten Rang bei Gleichstand.
-- [ ] Die Gesamtrangliste summiert alle Durchgänge eines Spielers im Turnier; Best-of und Durchschnitt gibt es nicht.
-- [ ] Der Status „vorläufig“ oder „bestätigt“ steht über der Tabelle und verlinkt offene Prüffälle.
-- [ ] Die Quelle „gescannt“ oder „manuell“ ist pro Ergebnis sichtbar.
-- [ ] Die Vollbild-Rangliste funktioniert und ist aus einiger Entfernung lesbar.
-- [ ] Ohne bestätigte Ergebnisse erscheint ein Leerzustand mit „Zu den Prüfungen“.
-- [ ] Tests am Anwendungskern und an der HTTP-Fläche decken Sortierung, Gleichstand, Gesamtsumme, Status und Leerzustand ab.
+- [x] Die Durchgangsrangliste sortiert nach Ergebnis und zeigt geteilten Rang bei Gleichstand.
+- [x] Die Gesamtrangliste summiert alle Durchgänge eines Spielers im Turnier; Best-of und Durchschnitt gibt es nicht.
+- [x] Der Status „vorläufig“ oder „bestätigt“ steht über der Tabelle und verlinkt offene Prüffälle.
+- [x] Die Quelle „gescannt“ oder „manuell“ ist pro Ergebnis sichtbar.
+- [x] Die Vollbild-Rangliste funktioniert und ist aus einiger Entfernung lesbar.
+- [x] Ohne bestätigte Ergebnisse erscheint ein Leerzustand mit „Zu den Prüfungen“.
+- [x] Tests am Anwendungskern und an der HTTP-Fläche decken Sortierung, Gleichstand, Gesamtsumme, Status und Leerzustand ab.

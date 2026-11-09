@@ -5,34 +5,8 @@ from conftest import FAKE_RESPONSES
 from pydantic import ValidationError
 
 from knobeln.domain.models import BogenRef, Gruppe
-from knobeln.io.csv_mapping import gruppe_from_csv_rows, gruppe_to_rows
 from knobeln.llm.mapping import build_neue_bogen, gruppe_from_llm
 from knobeln.llm.models import BogenLLM, SpielerLLM
-
-CSV_FIELDS = [
-    "Bogen_ID",
-    "Quelle",
-    "Seite",
-    "Spieler_Position",
-    "Durchgang_Nr",
-    "Spieler_Nr",
-    "Spieler_Name",
-    "Wurf_Nr",
-    "Punkte",
-    "Punkte_Roh",
-    "Korrektur",
-    "Summe_Bogen_Roh",
-    "Summe_Bogen",
-    "Summe_Berechnet",
-    "Delta",
-    "Status",
-    "Warnung",
-    "Konflikt",
-    "Konflikt_Detail",
-    "Namenskonflikt",
-    "Geprueft",
-    "Kommentar",
-]
 
 
 def _spieler(name: str, position: int) -> SpielerLLM:
@@ -126,34 +100,6 @@ def test_platzhalter():
     assert "nicht gelesen" in gruppe.warnung_text
 
 
-def test_csv_roundtrip():
-    data = FAKE_RESPONSES["img2.jpg"]
-    spieler = SpielerLLM.model_validate(data["spieler"][0])
-    gruppe = gruppe_from_llm(
-        ref=BogenRef("b", "img2.jpg", 1),
-        durchgang_nr=1,
-        spieler=spieler,
-        position=1,
-    )
-    gruppe.geprueft = True
-    gruppe.konflikt = True
-    gruppe.konflikt_detail = "W01: bestehend 200, neu 195"
-    gruppe.name_conflict_names = {"V. Spelow", "V. Spellow"}
-    gruppe.kommentare[0] = "geprüft"
-    gruppe.recompute()
-    rows = gruppe_to_rows(gruppe, CSV_FIELDS)
-    wieder = gruppe_from_csv_rows(rows)
-    assert wieder.punkte == gruppe.punkte
-    assert wieder.summe_bogen == 765
-    assert wieder.konflikt is True
-    assert wieder.geprueft is True
-    assert wieder.name_conflict_names == {"V. Spelow", "V. Spellow"}
-    assert wieder.kommentare[0] == "geprüft"
-    assert "summe_abweichung" in wieder.statuses
-    assert "konflikt" in wieder.statuses
-    assert "geprueft" in wieder.statuses
-
-
 def test_ungueltige_summe_wird_als_summe_ungueltig_gemeldet():
     spieler = _spieler("img1.jpg", 1)
     spieler.summe_bogen.roh = "766"
@@ -167,53 +113,6 @@ def test_ungueltige_summe_wird_als_summe_ungueltig_gemeldet():
     assert gruppe.summe_bogen is None
     assert "summe_ungueltig" in gruppe.statuses
     assert "summe_fehlt" not in gruppe.statuses
-
-
-def test_ungueltige_summe_aus_csv():
-    gruppe = gruppe_from_llm(
-        ref=BogenRef("b1-p1", "img1.jpg", 1),
-        durchgang_nr=2,
-        spieler=_spieler("img1.jpg", 1),
-        position=1,
-    )
-    rows = gruppe_to_rows(gruppe, CSV_FIELDS)
-    for row in rows:
-        row["Summe_Bogen"] = "abc"
-    wieder = gruppe_from_csv_rows(rows)
-    assert wieder.summe_bogen is None
-    assert "summe_ungueltig" in wieder.statuses
-    assert "summe_fehlt" not in wieder.statuses
-
-
-def test_ungueltige_summe_bleibt_nach_roundtrip_ungueltig():
-    spieler = _spieler("img1.jpg", 1)
-    spieler.summe_bogen.roh = "766"
-    spieler.summe_bogen.punkte = None
-    gruppe = gruppe_from_llm(
-        ref=BogenRef("b1-p1", "img1.jpg", 1),
-        durchgang_nr=2,
-        spieler=spieler,
-        position=1,
-    )
-    wieder = gruppe_from_csv_rows(gruppe_to_rows(gruppe, CSV_FIELDS))
-    assert wieder.summe_bogen is None
-    assert "summe_ungueltig" in wieder.statuses
-    assert "summe_fehlt" not in wieder.statuses
-
-
-def test_kommentare_bleiben_pro_zeile():
-    gruppe = gruppe_from_llm(
-        ref=BogenRef("b1-p1", "img1.jpg", 1),
-        durchgang_nr=2,
-        spieler=_spieler("img1.jpg", 1),
-        position=1,
-    )
-    gruppe.kommentare[0] = "Wurf 1 geprüft"
-    gruppe.kommentare[1] = "Wurf 2 anders"
-    wieder = gruppe_from_csv_rows(gruppe_to_rows(gruppe, CSV_FIELDS))
-    assert wieder.kommentare[0] == "Wurf 1 geprüft"
-    assert wieder.kommentare[1] == "Wurf 2 anders"
-    assert wieder.kommentare[2] == ""
 
 
 def test_zu_viele_wurf_zeilen_werden_abgelehnt():

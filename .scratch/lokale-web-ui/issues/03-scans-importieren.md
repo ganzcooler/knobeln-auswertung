@@ -6,12 +6,12 @@
 
 **Blocked by:** 02 — Durchgang anlegen und auswählen
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Drag-and-drop und Dateiauswahl akzeptieren JPG, PNG und PDF.
-- [ ] PDF-Seiten werden als einzelne Bögen erfasst.
-- [ ] Die Original-Scans liegen dauerhaft im Scan-Archiv; die Datenbank referenziert sie.
-- [ ] Der Stapel zeigt pro Bogen Dateiname, Seite, Durchgang und Status „warten“.
-- [ ] Ein doppelter Scan wird erkannt; die Turnierleitung entscheidet über Behalten oder Ignorieren.
-- [ ] Eine nicht unterstützte oder fehlerhafte Datei wird inline gemeldet; die übrigen Uploads laufen weiter.
-- [ ] Tests am Anwendungskern und an der HTTP-Fläche decken Upload, PDF-Mehrseiter, Duplikat und Fehlerfall ab.
+- [x] Drag-and-drop und Dateiauswahl akzeptieren JPG, PNG und PDF.
+- [x] PDF-Seiten werden als einzelne Bögen erfasst.
+- [x] Die Original-Scans liegen dauerhaft im Scan-Archiv; die Datenbank referenziert sie.
+- [x] Der Stapel zeigt pro Bogen Dateiname, Seite, Durchgang und Status „warten“.
+- [x] Ein doppelter Scan wird erkannt; die Turnierleitung entscheidet über Behalten oder Ignorieren.
+- [x] Eine nicht unterstützte oder fehlerhafte Datei wird inline gemeldet; die übrigen Uploads laufen weiter.
+- [x] Tests am Anwendungskern und an der HTTP-Fläche decken Upload, PDF-Mehrseiter, Duplikat und Fehlerfall ab.

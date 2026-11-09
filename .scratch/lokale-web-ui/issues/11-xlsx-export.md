@@ -6,10 +6,10 @@
 
 **Blocked by:** 09 — Rangliste und Gesamtwertung
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Ein Export erzeugt eine XLSX-Datei mit einem Blatt pro Durchgang und einem Gesamtblatt.
-- [ ] Die Blätter enthalten Rang, Spieler-Nr., Name, Ergebnisse, Quelle und Status.
-- [ ] Manuelle Ergebnisse sind im Export als „manuell“ erkennbar.
-- [ ] Ein Exportfehler zeigt eine klare Meldung mit „Erneut versuchen“; die Rangliste bleibt sichtbar.
-- [ ] Tests am Anwendungskern öffnen die erzeugte Arbeitsmappe und prüfen Blätter, Werte und Quellen.
+- [x] Ein Export erzeugt eine XLSX-Datei mit einem Blatt pro Durchgang und einem Gesamtblatt.
+- [x] Die Blätter enthalten Rang, Spieler-Nr., Name, Ergebnisse, Quelle und Status.
+- [x] Manuelle Ergebnisse sind im Export als „manuell“ erkennbar.
+- [x] Ein Exportfehler zeigt eine klare Meldung mit „Erneut versuchen“; die Rangliste bleibt sichtbar.
+- [x] Tests am Anwendungskern öffnen die erzeugte Arbeitsmappe und prüfen Blätter, Werte und Quellen.

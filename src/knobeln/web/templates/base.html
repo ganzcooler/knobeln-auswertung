@@ -12,18 +12,58 @@
     <div class="turnier-status">
       {% if current_turnier %}
         Aktuelles Turnier: {{ current_turnier.name }}
+        {% if current_durchgang %} · Durchgang {{ current_durchgang.nummer }}{% endif %}
       {% else %}
         Kein Turnier ausgewählt
       {% endif %}
     </div>
     <nav class="tabs" aria-label="Hauptbereiche">
-      <a class="tab tab-active" href="/scannen">Scannen</a>
-      <span class="tab tab-inactive" aria-disabled="true">Prüfen</span>
-      <span class="tab tab-inactive" aria-disabled="true">Rangliste</span>
+      <a class="tab {% if request.url.path.startswith('/scannen') %}tab-active{% else %}tab-inactive{% endif %}" href="/scannen">Scannen</a>
+      <a class="tab {% if request.url.path.startswith('/pruefen') %}tab-active{% else %}tab-inactive{% endif %}" href="/pruefen">Prüfen{% if prueffall_count %} ({{ prueffall_count }}){% endif %}</a>
+      <a class="tab {% if request.url.path.startswith('/rangliste') %}tab-active{% else %}tab-inactive{% endif %}" href="/rangliste">Rangliste</a>
     </nav>
+    <button type="button" class="secondary" id="hilfe-button">Hilfe</button>
   </header>
+
+  {% if connection_status != 'erreichbar' %}
+    <div class="status-banner status-offline" role="status">
+      <span>Der Dienst ist gerade nicht erreichbar. Prüfen, manuelle Erfassung und Rangliste funktionieren weiter.</span>
+      <form method="post" action="/verbindung/pruefen" class="inline-form">
+        <button type="submit" class="secondary">Erneut prüfen</button>
+      </form>
+    </div>
+  {% endif %}
+
   <main class="page">
+    {% if hinweis %}<p class="hinweis" role="status">{{ hinweis }}</p>{% endif %}
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
     {% block content %}{% endblock %}
   </main>
+
+  <dialog id="hilfe-dialog" class="help-dialog">
+    <h2>So funktioniert es</h2>
+    <ol>
+      <li><strong>Scannen:</strong> Bögen ablegen. Die App liest sie und markiert nur die Fälle, die ein Mensch prüfen muss.</li>
+      <li><strong>Prüfen:</strong> Offene Fälle entscheiden. Rohwert, Vorschlag und Scan bleiben sichtbar.</li>
+      <li><strong>Rangliste:</strong> Durchgang oder Gesamt anzeigen, abschließen, exportieren.</li>
+    </ol>
+    <p><strong>Tastenkürzel:</strong> <kbd>?</kbd> Hilfe · <kbd>Esc</kbd> schließen.</p>
+    <p><strong>Verbindung:</strong> {{ connection_status }}. Nur die Extraktion braucht den Dienst; Prüfen, manuelle Erfassung und Rangliste laufen lokal.</p>
+    <button type="button" class="primary" onclick="document.getElementById('hilfe-dialog').close()">Schließen</button>
+  </dialog>
+
+  <script>
+    const hilfeDialog = document.getElementById('hilfe-dialog');
+    document.getElementById('hilfe-button').addEventListener('click', () => hilfeDialog.showModal());
+    document.addEventListener('keydown', (event) => {
+      const tag = document.activeElement ? document.activeElement.tagName : '';
+      if (event.key === '?' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) {
+        hilfeDialog.showModal();
+      }
+      if (event.key === 'Escape' && hilfeDialog.open) {
+        hilfeDialog.close();
+      }
+    });
+  </script>
 </body>
 </html>
