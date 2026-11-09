@@ -6,11 +6,15 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] `knobeln` startet die Web-App nur auf `127.0.0.1`; `knobeln web` ist ein Alias.
-- [ ] Ein Turnier kann mit Namen angelegt, umbenannt und nach Bestätigung gelöscht werden.
-- [ ] Das zuletzt geöffnete Turnier wird nach einem Neustart wieder geöffnet.
-- [ ] Vor dem Löschen eines Turniers entsteht eine SQLite-Kopie.
-- [ ] Die App startet ohne API-Key und zeigt eine leere Scannen-Ansicht mit dem nächsten Schritt.
-- [ ] Tests am Anwendungskern und an der HTTP-Fläche decken Anlegen, Auswählen, Umbenennen, Löschen und Neustart-Persistenz ab.
+- [x] `knobeln` startet die Web-App nur auf `127.0.0.1`; `knobeln web` ist ein Alias.
+- [x] Ein Turnier kann mit Namen angelegt, umbenannt und nach Bestätigung gelöscht werden.
+- [x] Das zuletzt geöffnete Turnier wird nach einem Neustart wieder geöffnet.
+- [x] Vor dem Löschen eines Turniers entsteht eine SQLite-Kopie.
+- [x] Die App startet ohne API-Key und zeigt eine leere Scannen-Ansicht mit dem nächsten Schritt.
+- [x] Tests am Anwendungskern und an der HTTP-Fläche decken Anlegen, Auswählen, Umbenennen, Löschen und Neustart-Persistenz ab.
+
+## Comments
+
+Umgesetzt in `c14e9de`; Code-Review-Fixes in `eb85b36`. Die SQLite-Sicherung nutzt jetzt die SQLite-Backup-API und ist im Test wiederherstellbar. `./scripts/check.sh` ist grün (69 passed, 1 manual skipped).
