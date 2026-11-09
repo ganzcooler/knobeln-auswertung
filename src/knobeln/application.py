@@ -257,7 +257,15 @@ class KnobelnService:
                 seite=bogen.seite,
             ),
         )
-        self.store.delete_groups_for_bogen(bogen.id)
+        vorhandene = self.store.list_gruppen_for_bogen(bogen.id)
+        if vorhandene and not all(
+            stored.gruppe.statuses == {"bogen_unklar"} for stored in vorhandene
+        ):
+            raise ValueError(
+                "Bogen wurde bereits gelesen; vorhandene Werte bleiben erhalten."
+            )
+        if vorhandene:
+            self.store.delete_groups_for_bogen(bogen.id)
         if neue.bogen_unklar:
             placeholder = Gruppe(
                 ref=BogenRef(
@@ -282,6 +290,12 @@ class KnobelnService:
             return
 
         for gruppe in neue.spieler:
+            if (
+                not gruppe.spieler_nr.strip()
+                and not any(raw.strip() for raw in gruppe.punkte_roh)
+                and gruppe.summe_bogen is None
+            ):
+                continue
             if neue.durchgang_nr is not None and neue.durchgang_nr != durchgang.nummer:
                 gruppe.zusatz_status.add("durchgang_unklar")
                 gruppe.zusatz_warnungen.append(
@@ -294,6 +308,13 @@ class KnobelnService:
         self.store.set_bogen_status(bogen.id, "fertig")
 
     def retry_bogen(self, bogen_id: int) -> None:
+        vorhandene = self.store.list_gruppen_for_bogen(bogen_id)
+        if vorhandene and not all(
+            stored.gruppe.statuses == {"bogen_unklar"} for stored in vorhandene
+        ):
+            raise ValueError(
+                "Bogen wurde bereits gelesen; vorhandene Werte bleiben erhalten."
+            )
         self.store.retry_job(bogen_id)
 
     def list_bogen(self, durchgang_id: int) -> list[Bogen]:
@@ -326,26 +347,29 @@ class KnobelnService:
             raise LookupError(f"Konflikt {konflikt_id} nicht gefunden.")
         return konflikt
 
+    def list_offene_konflikte(self, durchgang_id: int) -> list[Konflikt]:
+        return self.store.list_offene_konflikte(durchgang_id)
+
     # -- Gruppen und Konflikte -----------------------------------------
 
     def _register_scan_group(
         self, durchgang_id: int, bogen_id: int, gruppe: Gruppe
     ) -> int:
-        active = [
+        candidates = [
             stored
             for stored in self.store.find_gruppen_for_player(
                 durchgang_id, gruppe.spieler_nr
             )
-            if stored.ergebnis_status == "aktiv"
+            if stored.ergebnis_status != "verworfen"
         ]
-        if not active:
+        if not candidates:
             return self.store.save_gruppe(
                 durchgang_id=durchgang_id,
                 bogen_id=bogen_id,
                 gruppe=gruppe,
                 quelle="scan",
             )
-        existing = active[0]
+        existing = candidates[0]
         if self._same_result(existing, gruppe):
             return existing.id
         new_id = self.store.save_gruppe(
@@ -387,19 +411,27 @@ class KnobelnService:
             geprueft=True,
             statuses={"ok", "geprueft"},
         )
-        active = [
+        candidates = [
             stored
             for stored in self.store.find_gruppen_for_player(durchgang_id, clean_nr)
-            if stored.ergebnis_status == "aktiv"
+            if stored.ergebnis_status != "verworfen"
         ]
-        if any(stored.quelle != "manuell" for stored in active):
+        if any(stored.ergebnis_status == "konflikt" for stored in candidates):
+            raise ValueError(
+                "Für diesen Spieler gibt es einen offenen Konflikt. "
+                "Bitte zuerst den Konflikt entscheiden."
+            )
+        if any(
+            stored.quelle != "manuell" and stored.ergebnis_status == "aktiv"
+            for stored in candidates
+        ):
             raise ValueError(
                 "Für diesen Spieler gibt es schon ein gescanntes Ergebnis. "
                 "Bitte den Bogen prüfen."
             )
-        if active and self._same_result(active[0], manual):
-            return active[0]
-        status = "aktiv" if not active else "konflikt"
+        if candidates and self._same_result(candidates[0], manual):
+            return candidates[0]
+        status = "aktiv" if not candidates else "konflikt"
         manual_id = self.store.save_gruppe(
             durchgang_id=durchgang_id,
             bogen_id=None,
@@ -407,8 +439,8 @@ class KnobelnService:
             quelle="manuell",
             ergebnis_status=status,
         )
-        if active:
-            self._create_conflict(active[0], manual_id)
+        if candidates:
+            self._create_conflict(candidates[0], manual_id)
         stored = self.store.get_gruppe(manual_id)
         if stored is None:
             raise RuntimeError("Manuelles Ergebnis konnte nicht gespeichert werden.")
@@ -580,6 +612,22 @@ class KnobelnService:
                         gruppe_id=stored.id,
                     )
                 )
+            elif statuses & {
+                "summe_fehlt",
+                "summe_ungueltig",
+                "summe_unvollstaendig",
+            }:
+                faelle.append(
+                    Prueffall(
+                        id=f"g{stored.id}-summe",
+                        art="summe",
+                        schweregrad=1,
+                        titel="Summenzeile prüfen",
+                        detail=gruppe.warnung_text,
+                        bogen_id=stored.bogen_id,
+                        gruppe_id=stored.id,
+                    )
+                )
         return sorted(faelle, key=lambda fall: (fall.schweregrad, fall.id))
 
     def get_prueffall(self, durchgang_id: int, fall_id: str) -> Prueffall | None:
@@ -708,6 +756,32 @@ class KnobelnService:
     def summe_akzeptieren(self, gruppe_id: int) -> None:
         stored = self._require_scan_group(gruppe_id)
         stored.gruppe.geprueft = True
+        stored.gruppe.recompute()
+        self.store.update_gruppe(stored)
+
+    def bogen_hat_offene_faelle(self, bogen_id: int) -> bool:
+        groups = self.store.list_gruppen_for_bogen(bogen_id)
+        if not groups:
+            return False
+        durchgang_id = groups[0].durchgang_id
+        if any(
+            fall.bogen_id == bogen_id for fall in self.list_prueffaelle(durchgang_id)
+        ):
+            return True
+        gruppen_ids = {stored.id for stored in groups}
+        return any(
+            {konflikt.gruppe_a_id, konflikt.gruppe_b_id} & gruppen_ids
+            for konflikt in self.store.list_offene_konflikte(durchgang_id)
+        )
+
+    def korrigiere_kopf(self, gruppe_id: int, spieler_nr: str) -> None:
+        stored = self._require_scan_group(gruppe_id)
+        clean_nr = spieler_nr.strip()
+        if not clean_nr:
+            raise ValueError("Die Spieler-Nr. darf nicht leer sein.")
+        durchgang = self.get_durchgang(stored.durchgang_id)
+        stored.gruppe.spieler_nr = clean_nr
+        stored.gruppe.durchgang_nr = durchgang.nummer
         stored.gruppe.recompute()
         self.store.update_gruppe(stored)
 
@@ -952,6 +1026,15 @@ class KnobelnService:
             )
             else incoming.summe_bogen
         )
+        if incoming.ref.quelle == "manuell" or existing.quelle == "manuell":
+            return existing_sum is not None and existing_sum == incoming_sum
+        if all(punkt is not None for punkt in existing.gruppe.punkte) and all(
+            punkt is not None for punkt in incoming.punkte
+        ):
+            return (
+                existing.gruppe.punkte == incoming.punkte
+                and existing.gruppe.summe_bogen == incoming.summe_bogen
+            )
         return existing_sum is not None and existing_sum == incoming_sum
 
     @staticmethod

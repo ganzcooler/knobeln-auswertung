@@ -192,6 +192,34 @@ def test_manuelle_ergebnisse_validierung_und_rangliste(tmp_path: Path):
     service.close_durchgang(durchgang.id)
 
 
+def test_konflikt_bei_gleichen_punkten_aber_abweichender_summe(tmp_path: Path):
+    responses = copy.deepcopy(FAKE_RESPONSES)
+    responses["img1-kopie.jpg"] = copy.deepcopy(FAKE_RESPONSES["img1.jpg"])
+    responses["img1-kopie.jpg"]["spieler"][0]["summe_bogen"] = {
+        "roh": "990",
+        "punkte": 990,
+        "hinweis": None,
+    }
+    service = _service(tmp_path, FakeLLMClient(responses))
+    _, turnier = _durchgang(service)
+    durchgang = service.create_durchgang(turnier.id, 2)
+    _import(service, "img1.jpg", durchgang.id)
+    service.import_scan(
+        dateiname="img1-kopie.jpg",
+        data=(EXAMPLES / "img1.jpg").read_bytes(),
+        durchgang_id=durchgang.id,
+        force=True,
+    )
+    service.process_pending_jobs()
+
+    assert len(service.list_offene_konflikte(durchgang.id)) == 1
+    assert all(
+        stored.ergebnis_status != "aktiv"
+        for stored in service.list_gruppen(durchgang.id)
+        if stored.gruppe.spieler_nr == "41"
+    )
+
+
 def test_konflikt_bleibt_bis_entscheidung_offen(tmp_path: Path):
     responses = copy.deepcopy(FAKE_RESPONSES)
     responses["img1-kopie.jpg"] = copy.deepcopy(FAKE_RESPONSES["img1.jpg"])

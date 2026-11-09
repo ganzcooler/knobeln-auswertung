@@ -81,6 +81,9 @@ a:focus-visible {
 }
 
 .tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 8px 12px;
   color: var(--ink-soft);
   text-decoration: none;
@@ -181,6 +184,9 @@ h3 {
 }
 
 .link-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 4px 0;
   background: transparent;
   border: 0;
@@ -646,4 +652,24 @@ input[type="text"] {
   gap: 10px;
   margin: 8px 0 12px;
   font-size: 14px;
+}
+
+.scan-wrap {
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--paper-deep);
+}
+
+.scan-wrap .scan {
+  max-height: none;
+  margin: 0;
+  border: 0;
+}
+
+.scan-zoom {
+  width: 200%;
+  max-width: none;
+  cursor: zoom-out;
 }

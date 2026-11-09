@@ -19,16 +19,22 @@
   </section>
 {% elif not faelle %}
   <section class="panel empty-state">
-    <h2>Alles geprüft. Keine offenen Fälle.</h2>
-    <p>Der Durchgang kann jetzt abgeschlossen oder die Rangliste angesehen werden.</p>
-    <div class="form-row">
-      <a class="primary link-button" href="/rangliste">Rangliste anzeigen</a>
-      {% if current_durchgang.status != 'abgeschlossen' %}
-        <form method="post" action="/durchgang/{{ current_durchgang.id }}/abschliessen" class="inline-form">
-          <button type="submit" class="secondary">Durchgang abschließen</button>
-        </form>
-      {% endif %}
-    </div>
+    {% if art and prueffall_count %}
+      <h2>Keine Fälle in diesem Filter.</h2>
+      <p>Es gibt weiterhin {{ prueffall_count }} offene {{ 'Fall' if prueffall_count == 1 else 'Fälle' }}.</p>
+      <a class="primary link-button" href="/pruefen">Alle Fälle anzeigen</a>
+    {% else %}
+      <h2>Alles geprüft. Keine offenen Fälle.</h2>
+      <p>Der Durchgang kann jetzt abgeschlossen oder die Rangliste angesehen werden.</p>
+      <div class="form-row">
+        <a class="primary link-button" href="/rangliste">Rangliste anzeigen</a>
+        {% if current_durchgang.status != 'abgeschlossen' %}
+          <form method="post" action="/durchgang/{{ current_durchgang.id }}/abschliessen" class="inline-form">
+            <button type="submit" class="secondary">Durchgang abschließen</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endif %}
   </section>
 {% else %}
   <div class="review-layout">
@@ -38,8 +44,12 @@
         <div class="queue-filter">
           <a class="secondary-link" href="/pruefen">Alle</a>
           <a class="secondary-link" href="/pruefen?art=summe">Summe</a>
+          <a class="secondary-link" href="/pruefen?art=wert_fehlt">Fehlend</a>
           <a class="secondary-link" href="/pruefen?art=wert_ungueltig">Unzulässig</a>
+          <a class="secondary-link" href="/pruefen?art=wert_korrigiert">Korrigiert</a>
           <a class="secondary-link" href="/pruefen?art=unklare_ziffer">Unklar</a>
+          <a class="secondary-link" href="/pruefen?art=kopfzeile">Kopfzeile</a>
+          <a class="secondary-link" href="/pruefen?art=bogen_unklar">Bogen unklar</a>
           <a class="secondary-link" href="/pruefen?art=konflikt">Konflikt</a>
         </div>
         {% if undo_available %}
@@ -121,7 +131,10 @@
               </form>
             {% endif %}
           </div>
-          <img class="scan" src="/bogen/{{ bogen.id }}/scan" alt="Scan von {{ bogen.dateiname }}">
+          <div class="scan-wrap">
+            <img id="scan-{{ bogen.id }}" class="scan" src="/bogen/{{ bogen.id }}/scan" alt="Scan von {{ bogen.dateiname }}">
+          </div>
+          <button type="button" class="secondary" onclick="document.getElementById('scan-{{ bogen.id }}').classList.toggle('scan-zoom')">Zoom umschalten</button>
         {% endif %}
 
         {% if selected.art == 'bogen_unklar' %}
@@ -137,6 +150,23 @@
               <a class="secondary-link" href="/scannen">Manuell erfassen</a>
             </div>
           </div>
+        {% elif selected.art == 'kopfzeile' %}
+          {% for stored in groups %}
+            {% if selected.gruppe_id == stored.id %}
+              <div class="empty-state section-gap">
+                <h2>Kopfzeile korrigieren</h2>
+                <p>{{ stored.gruppe.warnung_text }}</p>
+                <form method="post" action="/pruefen/aktion" class="form form-row">
+                  <input type="hidden" name="aktion" value="kopf_korrigieren">
+                  <input type="hidden" name="gruppe_id" value="{{ stored.id }}">
+                  <label for="kopf-nr">Spieler-Nr.</label>
+                  <input id="kopf-nr" type="text" name="spieler_nr" value="{{ stored.gruppe.spieler_nr }}" required>
+                  <button type="submit" class="primary">Kopfzeile speichern</button>
+                </form>
+                <p class="muted">Der Durchgang ergibt sich aus dem Ablageort des Bogens.</p>
+              </div>
+            {% endif %}
+          {% endfor %}
         {% elif selected.art == 'summe' %}
           {% for stored in groups %}
             {% if selected.gruppe_id == stored.id %}
@@ -190,8 +220,12 @@
                   <button type="submit" class="secondary">Bogen bestätigen</button>
                 </form>
               </div>
+              <p class="muted">Zulässige Werte: {{ gueltige_punkte|join(', ') }}</p>
+              <datalist id="punkte">
+                {% for punkt in gueltige_punkte %}<option value="{{ punkt }}">{% endfor %}
+              </datalist>
               <table class="table">
-                <thead><tr><th>Wurf</th><th>Rohwert</th><th>Wert</th><th>Hinweis</th><th>Entscheidung</th></tr></thead>
+                <thead><tr><th>Wurf</th><th>Rohwert</th><th>Vorschlag</th><th>Hinweis</th><th>Entscheidung</th></tr></thead>
                 <tbody>
                   {% for i in range(12) %}
                     <tr class="{% if selected.wurf_nr == i + 1 %}selected-row{% endif %}">
@@ -212,7 +246,7 @@
                               <input type="hidden" name="aktion" value="korrigieren">
                               <input type="hidden" name="gruppe_id" value="{{ stored.id }}">
                               <input type="hidden" name="wurf_nr" value="{{ i + 1 }}">
-                              <input type="number" name="wert" min="0" max="200" step="5" required>
+                              <input type="number" name="wert" list="punkte" min="0" max="200" step="5" required>
                               <button type="submit" class="primary">Korrigieren</button>
                             </form>
                             <form method="post" action="/pruefen/aktion" class="inline-form">

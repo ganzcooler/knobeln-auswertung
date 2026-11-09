@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from ..application import DuplicateScanError, KnobelnService
+from ..domain.wertung import GUELTIGE_PUNKTE
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -56,6 +57,7 @@ def create_app(service: KnobelnService) -> FastAPI:
             "prueffall_count": len(faelle),
             "connection_status": service.connection_status(),
             "undo_available": service.has_undo(),
+            "gueltige_punkte": sorted(GUELTIGE_PUNKTE),
             **extra,
         }
 
@@ -96,6 +98,15 @@ def create_app(service: KnobelnService) -> FastAPI:
     ) -> HTMLResponse:
         durchgang = context(request)["current_durchgang"]
         bogen_liste = service.list_bogen(durchgang.id) if durchgang else []
+        offene_bogen_ids = (
+            {
+                fall.bogen_id
+                for fall in service.list_prueffaelle(durchgang.id)
+                if fall.bogen_id is not None
+            }
+            if durchgang
+            else set()
+        )
         bogen_warten = sum(1 for bogen in bogen_liste if bogen.job_status == "warten")
         bogen_laeuft = sum(1 for bogen in bogen_liste if bogen.job_status == "laeuft")
         if bogen_warten and service.llm_client is not None:
@@ -124,6 +135,7 @@ def create_app(service: KnobelnService) -> FastAPI:
                     for bogen in bogen_liste
                     if bogen.job_status in {"fertig", "bogen_unklar"}
                 ),
+                offene_bogen_ids=offene_bogen_ids,
                 hinweis=hinweis,
                 error=fehler,
             ),
@@ -253,6 +265,14 @@ def create_app(service: KnobelnService) -> FastAPI:
         background_tasks.add_task(service.process_pending_jobs)
         return redirect("/scannen", hinweis="Bogen wird erneut gelesen.")
 
+    @app.post("/bogen/{bogen_id}/bestaetigen", response_class=HTMLResponse)
+    def bogen_bestaetigen_route(bogen_id: int) -> RedirectResponse:
+        try:
+            service.bogen_bestaetigen(bogen_id)
+        except (ValueError, LookupError) as exc:
+            return redirect("/scannen", fehler=str(exc))
+        return redirect("/scannen", hinweis="Bogen bestätigt.")
+
     # -- Manuelle Ergebnisse --------------------------------------------
 
     @app.post("/manuell", response_class=HTMLResponse)
@@ -370,6 +390,7 @@ def create_app(service: KnobelnService) -> FastAPI:
         bogen_id: int = Form(0),
         konflikt_id: int = Form(0),
         gewaehlt_gruppe_id: int = Form(0),
+        spieler_nr: str = Form(""),
     ) -> RedirectResponse:
         try:
             if aktion == "korrigieren":
@@ -380,6 +401,8 @@ def create_app(service: KnobelnService) -> FastAPI:
                 service.markiere_unleserlich(gruppe_id, wurf_nr)
             elif aktion == "summe_akzeptieren":
                 service.summe_akzeptieren(gruppe_id)
+            elif aktion == "kopf_korrigieren":
+                service.korrigiere_kopf(gruppe_id, spieler_nr)
             elif aktion == "bogen_bestaetigen":
                 service.bogen_bestaetigen(bogen_id)
             elif aktion == "konflikt":

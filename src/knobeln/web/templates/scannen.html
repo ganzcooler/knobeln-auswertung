@@ -111,6 +111,10 @@
                   <form method="post" action="/bogen/{{ bogen.id }}/retry" class="inline-form">
                     <button type="submit" class="secondary">Erneut lesen</button>
                   </form>
+                {% elif bogen.job_status == 'fertig' and bogen.id not in offene_bogen_ids %}
+                  <form method="post" action="/bogen/{{ bogen.id }}/bestaetigen" class="inline-form">
+                    <button type="submit" class="secondary">Bogen bestätigen</button>
+                  </form>
                 {% endif %}
               </div>
             </li>
