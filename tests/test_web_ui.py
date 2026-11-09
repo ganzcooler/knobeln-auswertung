@@ -397,6 +397,69 @@ def test_fehlende_spielerposition_erzeugt_keine_prueffaelle(tmp_path: Path):
     assert service.list_prueffaelle(durchgang.id) == []
 
 
+def test_ungueltige_korrektur_zeigt_fehler(tmp_path: Path):
+    service, _, durchgang, client = _setup(tmp_path, nummer=3)
+    _upload(client, "img2.jpg")
+    gruppe = _group(service, durchgang.id, "17")
+
+    response = client.post(
+        "/pruefen/aktion",
+        data={
+            "aktion": "korrigieren",
+            "gruppe_id": gruppe.id,
+            "wurf_nr": 8,
+            "wert": 115,
+        },
+    )
+
+    assert "nicht in der Wertung" in response.text
+
+
+def test_exportfehler_wird_angezeigt(tmp_path: Path, monkeypatch):
+    service, _, _, client = _setup(tmp_path, with_llm=False)
+
+    def kaputt(_turnier_id):
+        raise RuntimeError("kaputt")
+
+    monkeypatch.setattr(service, "export_xlsx", kaputt)
+    response = client.get("/rangliste/export.xlsx")
+
+    assert "Export fehlgeschlagen" in response.text
+
+
+def test_scan_404_und_accessibility_markup(tmp_path: Path):
+    _, _, _, client = _setup(tmp_path, nummer=3)
+    _upload(client, "img2.jpg")
+
+    assert client.get("/bogen/999/scan").status_code == 404
+    pruefen = client.get("/pruefen")
+    scannen = client.get("/scannen")
+    css = client.get("/static/app.css").text
+
+    assert 'aria-live="polite"' in pruefen.text
+    assert "event.key === '?'" in scannen.text
+    assert "min-height: 44px" in css
+    assert "prefers-reduced-motion" in css
+
+
+def test_verbindung_pruefen_verarbeitet_wartende_jobs(tmp_path: Path):
+    service = _service(tmp_path, with_llm=False)
+    turnier = service.create_turnier("Verbindung")
+    durchgang = service.create_durchgang(turnier.id, 2)
+    service.import_scan(
+        dateiname="img1.jpg",
+        data=(EXAMPLES / "img1.jpg").read_bytes(),
+        durchgang_id=durchgang.id,
+    )
+    client = TestClient(create_app(service))
+
+    service.llm_client = FakeLLMClient()
+    response = client.post("/verbindung/pruefen")
+
+    assert response.status_code == 200
+    assert service.list_bogen(durchgang.id)[0].job_status == "fertig"
+
+
 def test_summenstatus_erzeugt_prueffall(tmp_path: Path):
     responses = copy.deepcopy(FAKE_RESPONSES)
     responses["img1-ohne-summe.jpg"] = copy.deepcopy(FAKE_RESPONSES["img1.jpg"])

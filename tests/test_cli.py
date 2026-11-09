@@ -58,6 +58,69 @@ def test_import_command(tmp_path: Path, monkeypatch):
     assert len(service.list_bogen(durchgang.id)) == 1
 
 
+def test_import_ohne_pfad_nutzt_input(tmp_path: Path, monkeypatch):
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    shutil.copy(EXAMPLES / "img1.jpg", input_dir / "img1.jpg")
+    service = KnobelnService(
+        SQLiteStore(tmp_path / "knobeln.db"),
+        llm_client=FakeLLMClient(),
+        scan_dir=tmp_path / "scans",
+    )
+    monkeypatch.setattr("knobeln.cli.build_service", lambda **kwargs: service)
+    monkeypatch.chdir(tmp_path)
+
+    result = CliRunner().invoke(app, ["import", "--turnier", "Default"])
+
+    assert result.exit_code == 0, result.output
+    assert "1 Bogen" in result.output
+
+
+def test_import_fehlender_pfad(tmp_path: Path):
+    result = CliRunner().invoke(app, ["import", str(tmp_path / "gibt-es-nicht")])
+
+    assert result.exit_code == 1
+    assert "Pfad nicht gefunden" in result.output
+
+
+def test_import_optionen_werden_weitergereicht(tmp_path: Path, monkeypatch):
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    shutil.copy(EXAMPLES / "img1.jpg", input_dir / "img1.jpg")
+    service = KnobelnService(
+        SQLiteStore(tmp_path / "knobeln.db"),
+        llm_client=FakeLLMClient(),
+        scan_dir=tmp_path / "scans",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_build(**kwargs):
+        captured.update(kwargs)
+        return service
+
+    monkeypatch.setattr("knobeln.cli.build_service", fake_build)
+    result = CliRunner().invoke(
+        app,
+        [
+            "import",
+            str(input_dir),
+            "--model",
+            "test/modell",
+            "--reasoning",
+            "high",
+            "--max-cost",
+            "0.5",
+            "--verbose",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert captured["model"] == "test/modell"
+    assert captured["reasoning"] == "high"
+    assert captured["max_cost"] == 0.5
+    assert "importiere" in result.output
+
+
 def test_web_command_startet_web_ui(tmp_path: Path, monkeypatch):
     calls: dict[str, object] = {}
 
@@ -74,6 +137,20 @@ def test_web_command_startet_web_ui(tmp_path: Path, monkeypatch):
 
     assert result.exit_code == 0, result.output
     assert calls["db_path"] == db
+
+
+def test_web_max_cost_wird_weitergereicht(tmp_path: Path, monkeypatch):
+    calls: dict[str, object] = {}
+
+    def fake_run_server(db_path=None, *, scan_dir=None, port=8000, max_cost=None):
+        calls["max_cost"] = max_cost
+
+    monkeypatch.setattr("knobeln.cli.run_server", fake_run_server)
+
+    result = CliRunner().invoke(app, ["web", "--max-cost", "0.5"])
+
+    assert result.exit_code == 0, result.output
+    assert calls["max_cost"] == 0.5
 
 
 def test_ohne_argument_startet_web(tmp_path: Path, monkeypatch):

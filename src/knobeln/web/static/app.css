@@ -673,3 +673,13 @@ input[type="text"] {
   max-width: none;
   cursor: zoom-out;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
