@@ -40,15 +40,20 @@ def web(
         None, "--scans", help="Scan-Archiv (Default: data/scans)"
     ),
     port: int = typer.Option(8000, "--port", help="Port der lokalen Web-UI"),
+    max_cost: float | None = typer.Option(
+        None, "--max-cost", help="Kostenlimit in USD pro Lauf"
+    ),
 ) -> None:
     """Startet die lokale Web-UI."""
-    run_server(db, scan_dir=scans, port=port)
+    run_server(db, scan_dir=scans, port=port, max_cost=max_cost)
     raise typer.Exit()
 
 
 @app.command("import")
 def import_scans(
-    pfad: Path = typer.Argument(..., help="Ordner mit JPG-, PNG- oder PDF-Scans"),
+    pfad: Path | None = typer.Argument(
+        None, help="Ordner mit JPG-, PNG- oder PDF-Scans (Default: input)"
+    ),
     db: Path | None = typer.Option(
         None, "--db", help="SQLite-Datei (Default: knobeln.db)"
     ),
@@ -67,6 +72,7 @@ def import_scans(
     verbose: bool = typer.Option(False, "--verbose", help="Ausführliche Ausgabe"),
 ) -> None:
     """Importiert Scans aus einem Ordner in das Scan-Archiv und die Datenbank."""
+    pfad = pfad or Path("input")
     if not pfad.exists():
         console.print(f"[red]Fehler:[/red] Pfad nicht gefunden: {pfad}")
         raise typer.Exit(1)

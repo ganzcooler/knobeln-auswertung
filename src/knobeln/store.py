@@ -593,6 +593,18 @@ class SQLiteStore:
             ).fetchall()
         return [self._stored_gruppe_from_row(row) for row in rows]
 
+    def delete_groups_for_bogen(self, bogen_id: int) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                DELETE FROM konflikt
+                WHERE gruppe_a_id IN (SELECT id FROM gruppe WHERE bogen_id = ?)
+                   OR gruppe_b_id IN (SELECT id FROM gruppe WHERE bogen_id = ?)
+                """,
+                (bogen_id, bogen_id),
+            )
+            connection.execute("DELETE FROM gruppe WHERE bogen_id = ?", (bogen_id,))
+
     def set_gruppe_ergebnis_status(
         self,
         gruppe_id: int,

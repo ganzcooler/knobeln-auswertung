@@ -83,7 +83,10 @@
       {% endif %}
 
       <div class="section-row section-gap">
-        <h2>Stapel</h2>
+        <div>
+          <h2>Stapel</h2>
+          <p class="muted">{{ bogen_fertig }} von {{ bogen_total }} Bögen gelesen{% if bogen_warten %} · {{ bogen_warten }} warten{% endif %}</p>
+        </div>
         {% if prueffall_count %}
           <a class="primary link-button" href="/pruefen">Weiter zum Prüfen ({{ prueffall_count }})</a>
         {% endif %}
@@ -187,5 +190,8 @@
     <h2>Kein Turnier ausgewählt</h2>
     <p>Wähle oben ein Turnier aus oder lege ein neues an.</p>
   </section>
+{% endif %}
+{% if bogen_warten or bogen_laeuft %}
+  <script>setTimeout(() => window.location.reload(), 3000);</script>
 {% endif %}
 {% endblock %}

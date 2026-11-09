@@ -22,7 +22,7 @@
           <button type="submit" class="secondary">Durchgang {{ current_durchgang.nummer }} abschließen</button>
         </form>
       {% elif current_durchgang %}
-        <form method="post" action="/durchgang/{{ current_durchgang.id }}/wieder-oeffnen" class="inline-form">
+        <form method="post" action="/durchgang/{{ current_durchgang.id }}/wieder-oeffnen" class="inline-form" onsubmit="return confirm('Durchgang wirklich wieder öffnen?');">
           <button type="submit" class="secondary">Durchgang {{ current_durchgang.nummer }} wieder öffnen</button>
         </form>
       {% endif %}
@@ -56,7 +56,7 @@
         <tbody>
           {% for row in gesamt %}
             <tr>
-              <td class="number">{{ row.rang }}</td>
+              <td class="number">{{ row.rang }}{% if row.geteilter_rang %}<span class="muted"> geteilter Rang</span>{% endif %}</td>
               <td class="number">{{ row.spieler_nr }}</td>
               <td>{{ row.spieler_name }}</td>
               <td class="number number-lg">{{ row.summe }}</td>
@@ -87,7 +87,7 @@
           <tbody>
             {% for row in rows %}
               <tr>
-                <td class="number">{{ row.rang }}</td>
+                <td class="number">{{ row.rang }}{% if row.geteilter_rang %}<span class="muted"> geteilter Rang</span>{% endif %}</td>
                 <td class="number">{{ row.spieler_nr }}</td>
                 <td>{{ row.spieler_name }}</td>
                 <td class="number number-lg">{{ row.summe }}</td>

@@ -61,10 +61,11 @@ def test_import_command(tmp_path: Path, monkeypatch):
 def test_web_command_startet_web_ui(tmp_path: Path, monkeypatch):
     calls: dict[str, object] = {}
 
-    def fake_run_server(db_path=None, *, scan_dir=None, port=8000):
+    def fake_run_server(db_path=None, *, scan_dir=None, port=8000, max_cost=None):
         calls["db_path"] = db_path
         calls["scan_dir"] = scan_dir
         calls["port"] = port
+        calls["max_cost"] = max_cost
 
     monkeypatch.setattr("knobeln.cli.run_server", fake_run_server)
     db = tmp_path / "knobeln.db"
@@ -78,7 +79,7 @@ def test_web_command_startet_web_ui(tmp_path: Path, monkeypatch):
 def test_ohne_argument_startet_web(tmp_path: Path, monkeypatch):
     calls: dict[str, object] = {}
 
-    def fake_run_server(db_path=None, *, scan_dir=None, port=8000):
+    def fake_run_server(db_path=None, *, scan_dir=None, port=8000, max_cost=None):
         calls["db_path"] = db_path
 
     monkeypatch.setattr("knobeln.cli.run_server", fake_run_server)

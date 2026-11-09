@@ -639,3 +639,11 @@ input[type="text"] {
     max-height: none;
   }
 }
+
+.queue-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 8px 0 12px;
+  font-size: 14px;
+}

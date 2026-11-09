@@ -17,6 +17,7 @@ def run_server(
     *,
     scan_dir: Path | None = None,
     port: int = 8000,
+    max_cost: float | None = None,
 ) -> None:
-    service = build_service(db_path=db_path, scan_dir=scan_dir)
+    service = build_service(db_path=db_path, scan_dir=scan_dir, max_cost=max_cost)
     uvicorn.run(create_app(service), host=LOCAL_HOST, port=port)

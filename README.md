@@ -81,6 +81,15 @@ Archiv und verarbeitet sie mit demselben Anwendungskern wie die Web-UI.
 - Alte `auswertung.csv`-Daten und der frühere `review/`-Ordner werden nicht
   importiert.
 
+## Barrierefreiheit
+
+Die UI folgt WCAG 2.2 AA soweit für die lokale Einzelplatz-App praktikabel:
+sichtbarer Fokus, Ziele von mindestens 44 × 44 px, Status immer als Text plus
+Farbe, keine Icon-only-Buttons, Bedienbarkeit bei 200-%-Zoom und ein
+Hilfe-Dialog über `?`. Es gibt keine Pflichtanimationen; `prefers-reduced-motion`
+wird daher nicht durch Bewegung belastet. Die Prüf-Queue ist per Tastatur
+bedienbar, und der Zähler wird per `aria-live` aktualisiert.
+
 ## Entwicklung
 
 ```bash

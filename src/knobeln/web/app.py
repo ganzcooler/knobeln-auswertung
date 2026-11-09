@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -26,7 +27,12 @@ TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
 def create_app(service: KnobelnService) -> FastAPI:
-    app = FastAPI(title="Knobeln-Auswertung")
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        service.process_pending_jobs()
+        yield
+
+    app = FastAPI(title="Knobeln-Auswertung", lifespan=lifespan)
     app.mount(
         "/static",
         StaticFiles(directory=str(BASE_DIR / "static")),
@@ -84,11 +90,16 @@ def create_app(service: KnobelnService) -> FastAPI:
     @app.get("/scannen", response_class=HTMLResponse)
     def scannen(
         request: Request,
+        background_tasks: BackgroundTasks,
         hinweis: str | None = None,
         fehler: str | None = None,
     ) -> HTMLResponse:
         durchgang = context(request)["current_durchgang"]
         bogen_liste = service.list_bogen(durchgang.id) if durchgang else []
+        bogen_warten = sum(1 for bogen in bogen_liste if bogen.job_status == "warten")
+        bogen_laeuft = sum(1 for bogen in bogen_liste if bogen.job_status == "laeuft")
+        if bogen_warten and service.llm_client is not None:
+            background_tasks.add_task(service.process_pending_jobs)
         manual_groups = (
             [
                 stored
@@ -105,6 +116,14 @@ def create_app(service: KnobelnService) -> FastAPI:
                 request,
                 bogen_liste=bogen_liste,
                 manual_groups=manual_groups,
+                bogen_total=len(bogen_liste),
+                bogen_warten=bogen_warten,
+                bogen_laeuft=bogen_laeuft,
+                bogen_fertig=sum(
+                    1
+                    for bogen in bogen_liste
+                    if bogen.job_status in {"fertig", "bogen_unklar"}
+                ),
                 hinweis=hinweis,
                 error=fehler,
             ),
@@ -280,7 +299,9 @@ def create_app(service: KnobelnService) -> FastAPI:
     def pruefen(
         request: Request,
         fall: str | None = None,
+        art: str | None = None,
         hinweis: str | None = None,
+        fehler: str | None = None,
     ) -> HTMLResponse:
         durchgang = context(request)["current_durchgang"]
         if durchgang is None:
@@ -295,10 +316,14 @@ def create_app(service: KnobelnService) -> FastAPI:
                     groups=[],
                     konflikt=None,
                     konflikt_gruppen=[],
+                    art=None,
                     hinweis=hinweis,
+                    error=fehler,
                 ),
             )
         faelle = service.list_prueffaelle(durchgang.id)
+        if art:
+            faelle = [fall for fall in faelle if fall.art == art]
         selected = (
             service.get_prueffall(durchgang.id, fall)
             if fall
@@ -329,7 +354,9 @@ def create_app(service: KnobelnService) -> FastAPI:
                 groups=groups,
                 konflikt=konflikt,
                 konflikt_gruppen=konflikt_gruppen,
+                art=art,
                 hinweis=hinweis,
+                error=fehler,
             ),
         )
 
@@ -351,6 +378,8 @@ def create_app(service: KnobelnService) -> FastAPI:
                 service.uebernehme_wert(gruppe_id, wurf_nr)
             elif aktion == "unleserlich":
                 service.markiere_unleserlich(gruppe_id, wurf_nr)
+            elif aktion == "summe_akzeptieren":
+                service.summe_akzeptieren(gruppe_id)
             elif aktion == "bogen_bestaetigen":
                 service.bogen_bestaetigen(bogen_id)
             elif aktion == "konflikt":
@@ -416,8 +445,11 @@ def create_app(service: KnobelnService) -> FastAPI:
     def rangliste_export() -> Response:
         current = service.last_opened_turnier()
         if current is None:
-            raise HTTPException(status_code=404, detail="Kein Turnier ausgewählt.")
-        data = service.export_xlsx(current.id)
+            return redirect("/rangliste", fehler="Kein Turnier ausgewählt.")
+        try:
+            data = service.export_xlsx(current.id)
+        except Exception as exc:  # noqa: BLE001 - Exportfehler sichtbar machen
+            return redirect("/rangliste", fehler=f"Export fehlgeschlagen: {exc}")
         filename = f"rangliste-{current.name}.xlsx".replace(" ", "-")
         return Response(
             content=data,
@@ -441,7 +473,10 @@ def create_app(service: KnobelnService) -> FastAPI:
         return redirect("/rangliste", hinweis="Durchgang wieder geöffnet.")
 
     @app.post("/verbindung/pruefen", response_class=HTMLResponse)
-    def verbindung_pruefen() -> RedirectResponse:
+    def verbindung_pruefen(
+        background_tasks: BackgroundTasks,
+    ) -> RedirectResponse:
+        background_tasks.add_task(service.process_pending_jobs)
         return redirect("/scannen", hinweis="Verbindungsstatus aktualisiert.")
 
     return app

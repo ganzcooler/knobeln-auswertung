@@ -69,6 +69,7 @@ def test_scan_lesen_pruefen_abschliessen_und_rangliste(tmp_path: Path):
 
     service.reopen_durchgang(durchgang.id)
     assert service.get_durchgang(durchgang.id).status == "offen"
+    assert list(tmp_path.glob("knobeln.db.*.bak"))
     assert service.gesamt_rangliste(turnier.id)[0].spieler_nr == "41"
 
 
@@ -103,6 +104,57 @@ def test_summenfall_korrigieren_und_bestaetigen(tmp_path: Path):
     service.bogen_bestaetigen(bogen.id)
     assert service.list_prueffaelle(durchgang.id) == []
     service.close_durchgang(durchgang.id)
+
+
+def test_summenabweichung_akzeptieren(tmp_path: Path):
+    service = _service(tmp_path)
+    _, turnier = _durchgang(service)
+    durchgang = service.create_durchgang(turnier.id, 3)
+    bogen = _import(service, "img2.jpg", durchgang.id)[0]
+    service.process_pending_jobs()
+    gruppe = next(
+        stored
+        for stored in service.list_gruppen_for_bogen(bogen.id)
+        if stored.gruppe.spieler_nr == "17"
+    )
+
+    service.summe_akzeptieren(gruppe.id)
+
+    assert service.list_prueffaelle(durchgang.id) == []
+    service.bogen_bestaetigen(bogen.id)
+    service.close_durchgang(durchgang.id)
+
+
+def test_gleichstand_ergibt_geteilten_rang(tmp_path: Path):
+    service = _service(tmp_path, with_llm=False)
+    durchgang, _ = _durchgang(service)
+    service.create_manual_result(
+        durchgang_id=durchgang.id, spieler_nr="1", spieler_name="", summe=500
+    )
+    service.create_manual_result(
+        durchgang_id=durchgang.id, spieler_nr="2", spieler_name="", summe=500
+    )
+
+    rows = service.durchgang_rangliste(durchgang.id)
+
+    assert [row.rang for row in rows] == [1, 1]
+    assert all(row.geteilter_rang for row in rows)
+
+
+def test_manuell_lehnt_vorhandenen_scan_ab(tmp_path: Path):
+    service = _service(tmp_path)
+    _, turnier = _durchgang(service)
+    durchgang = service.create_durchgang(turnier.id, 2)
+    _import(service, "img1.jpg", durchgang.id)
+    service.process_pending_jobs()
+
+    with pytest.raises(ValueError):
+        service.create_manual_result(
+            durchgang_id=durchgang.id,
+            spieler_nr="41",
+            spieler_name="",
+            summe=985,
+        )
 
 
 def test_manuelle_ergebnisse_validierung_und_rangliste(tmp_path: Path):
@@ -173,6 +225,30 @@ def test_konflikt_bleibt_bis_entscheidung_offen(tmp_path: Path):
     )
 
 
+def test_kostenlimit_stoppt_weitere_extraktion(tmp_path: Path):
+    service = KnobelnService(
+        SQLiteStore(tmp_path / "knobeln.db"),
+        llm_client=FakeLLMClient(),
+        scan_dir=tmp_path / "scans",
+        max_cost=0.0005,
+    )
+    _, turnier = _durchgang(service)
+    durchgang = service.create_durchgang(turnier.id, 2)
+    _import(service, "img1.jpg", durchgang.id)
+    service.import_scan(
+        dateiname="img1-kopie.jpg",
+        data=(EXAMPLES / "img1.jpg").read_bytes(),
+        durchgang_id=durchgang.id,
+        force=True,
+    )
+
+    assert service.process_pending_jobs() == 1
+    assert [bogen.job_status for bogen in service.list_bogen(durchgang.id)] == [
+        "fertig",
+        "warten",
+    ]
+
+
 def test_offline_import_wartet_und_lokale_arbeit_bleibt_moeglich(tmp_path: Path):
     service = _service(tmp_path, with_llm=False)
     durchgang, _ = _durchgang(service)
@@ -228,3 +304,11 @@ def test_pdf_mehrseiter_und_xlsx_export(tmp_path: Path):
     workbook = load_workbook(io.BytesIO(data))
     assert "Gesamt" in workbook.sheetnames
     assert "Durchgang 1" in workbook.sheetnames
+    assert [cell.value for cell in workbook["Gesamt"][1]] == [
+        "Rang",
+        "Spieler-Nr.",
+        "Name",
+        "Summe",
+        "Quelle",
+        "Status",
+    ]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import uuid
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -16,7 +16,7 @@ from .domain.turnier import Turnier
 from .domain.wertung import GUELTIGE_PUNKTE, ist_gueltige_summe
 from .io.input_scanner import bogen_id_for
 from .io.pdf import image_to_jpeg, pdf_page_count, render_pdf_page
-from .llm.client import LLMClient
+from .llm.client import LLMClient, LLMError, LLMJSONError, LLMLengthError
 from .llm.mapping import build_neue_bogen
 from .store import SQLiteStore
 
@@ -48,6 +48,7 @@ class RanglistenZeile:
     summe: int
     quelle: str
     status: str
+    geteilter_rang: bool = False
 
 
 class KnobelnService:
@@ -236,6 +237,12 @@ class KnobelnService:
                 )
                 spent += result.cost_usd
                 processed += 1
+            except (LLMJSONError, LLMLengthError) as exc:
+                self.store.update_job(bogen.id, status="fehler", fehler=str(exc))
+                self.store.set_bogen_status(bogen.id, "fehler")
+            except LLMError as exc:
+                self.store.update_job(bogen.id, status="warten", fehler=str(exc))
+                self.store.set_bogen_status(bogen.id, "warten")
             except Exception as exc:  # noqa: BLE001 - Jobfehler sichtbar machen
                 self.store.update_job(bogen.id, status="fehler", fehler=str(exc))
                 self.store.set_bogen_status(bogen.id, "fehler")
@@ -250,6 +257,7 @@ class KnobelnService:
                 seite=bogen.seite,
             ),
         )
+        self.store.delete_groups_for_bogen(bogen.id)
         if neue.bogen_unklar:
             placeholder = Gruppe(
                 ref=BogenRef(
@@ -384,6 +392,11 @@ class KnobelnService:
             for stored in self.store.find_gruppen_for_player(durchgang_id, clean_nr)
             if stored.ergebnis_status == "aktiv"
         ]
+        if any(stored.quelle != "manuell" for stored in active):
+            raise ValueError(
+                "Für diesen Spieler gibt es schon ein gescanntes Ergebnis. "
+                "Bitte den Bogen prüfen."
+            )
         if active and self._same_result(active[0], manual):
             return active[0]
         status = "aktiv" if not active else "konflikt"
@@ -486,7 +499,14 @@ class KnobelnService:
                 )
             for index, punkt in enumerate(gruppe.punkte):
                 wurf_nr = index + 1
-                if gruppe.kommentare[index]:
+                kommentar = gruppe.kommentare[index]
+                if kommentar.startswith(
+                    (
+                        "Korrigiert:",
+                        "Als unleserlich markiert.",
+                        "Vorschlag übernommen.",
+                    )
+                ):
                     continue
                 if punkt is None:
                     art = (
@@ -584,7 +604,7 @@ class KnobelnService:
         stored.gruppe.punkte[index] = punkte
         if alt != punkte:
             roh = stored.gruppe.punkte_roh[index] or "leer"
-            stored.gruppe.kommentare[index] = f"Korrigiert: {roh} -> {punkte}"
+            self._append_kommentar(stored, index, f"Korrigiert: {roh} -> {punkte}")
         stored.gruppe.korrekturen[index] = None
         stored.gruppe.llm_hinweise[index] = None
         stored.gruppe.recompute()
@@ -598,7 +618,7 @@ class KnobelnService:
         self._remember_undo(stored, index)
         stored.gruppe.korrekturen[index] = None
         stored.gruppe.llm_hinweise[index] = None
-        stored.gruppe.kommentare[index] = "Vorschlag übernommen."
+        self._append_kommentar(stored, index, "Vorschlag übernommen.")
         stored.gruppe.recompute()
         self.store.update_gruppe(stored)
 
@@ -609,7 +629,7 @@ class KnobelnService:
         stored.gruppe.punkte[index] = None
         stored.gruppe.korrekturen[index] = None
         stored.gruppe.llm_hinweise[index] = None
-        stored.gruppe.kommentare[index] = "Als unleserlich markiert."
+        self._append_kommentar(stored, index, "Als unleserlich markiert.")
         stored.gruppe.recompute()
         self.store.update_gruppe(stored)
 
@@ -623,6 +643,11 @@ class KnobelnService:
         stored = self.get_gruppe(gruppe_id)
         if stored.quelle != "manuell":
             raise ValueError("Nur manuelle Ergebnisse können hier bearbeitet werden.")
+        if stored.ergebnis_status != "aktiv" or stored.konflikt_id is not None:
+            raise ValueError(
+                "Diese Erfassung ist Teil eines offenen Konflikts und kann hier "
+                "nicht bearbeitet werden."
+            )
         durchgang = self.get_durchgang(stored.durchgang_id)
         if durchgang.status == "abgeschlossen":
             raise ValueError("Dieser Durchgang ist abgeschlossen.")
@@ -663,6 +688,11 @@ class KnobelnService:
         self.store.clear_undo()
         return True
 
+    @staticmethod
+    def _append_kommentar(stored: StoredGruppe, index: int, note: str) -> None:
+        vorhanden = stored.gruppe.kommentare[index].strip()
+        stored.gruppe.kommentare[index] = f"{vorhanden} | {note}" if vorhanden else note
+
     def _remember_undo(self, stored: StoredGruppe, index: int) -> None:
         self.store.set_undo(
             {
@@ -675,16 +705,35 @@ class KnobelnService:
             }
         )
 
+    def summe_akzeptieren(self, gruppe_id: int) -> None:
+        stored = self._require_scan_group(gruppe_id)
+        stored.gruppe.geprueft = True
+        stored.gruppe.recompute()
+        self.store.update_gruppe(stored)
+
     def bogen_bestaetigen(self, bogen_id: int) -> None:
         groups = self.store.list_gruppen_for_bogen(bogen_id)
         if not groups:
             raise LookupError("Bogen nicht gefunden.")
         durchgang_id = groups[0].durchgang_id
+        gruppen_ids = {stored.id for stored in groups}
         blocker = [
             fall
             for fall in self.list_prueffaelle(durchgang_id)
-            if fall.bogen_id == bogen_id and fall.art != "summe"
+            if fall.bogen_id == bogen_id
         ]
+        for konflikt in self.store.list_offene_konflikte(durchgang_id):
+            if {konflikt.gruppe_a_id, konflikt.gruppe_b_id} & gruppen_ids:
+                blocker.append(
+                    Prueffall(
+                        id=f"k{konflikt.id}",
+                        art="konflikt",
+                        schweregrad=4,
+                        titel=f"Konflikt bei Spieler {konflikt.spieler_nr}",
+                        detail="Zuerst den Konflikt entscheiden.",
+                        konflikt_id=konflikt.id,
+                    )
+                )
         if blocker:
             raise ValueError(
                 f"Es sind noch {len(blocker)} Prüffälle auf diesem Bogen offen."
@@ -727,6 +776,7 @@ class KnobelnService:
                 summe=row.summe,
                 quelle=row.quelle,
                 status=status,
+                geteilter_rang=row.geteilter_rang,
             )
             for row in rows
         ]
@@ -780,7 +830,7 @@ class KnobelnService:
             )
             previous_sum = summe
             previous_rank = rang
-        return result
+        return self._mark_ties(result)
 
     def _rangliste_rows(self, gruppen: list[StoredGruppe]) -> list[RanglistenZeile]:
         values: dict[str, tuple[int, str, str]] = {}
@@ -813,7 +863,19 @@ class KnobelnService:
             )
             previous_sum = summe
             previous_rank = rang
-        return result
+        return self._mark_ties(result)
+
+    @staticmethod
+    def _mark_ties(rows: list[RanglistenZeile]) -> list[RanglistenZeile]:
+        zaehler: dict[int, int] = {}
+        for row in rows:
+            zaehler[row.summe] = zaehler.get(row.summe, 0) + 1
+        return [
+            replace(row, geteilter_rang=zaehler[row.summe] > 1)
+            if zaehler[row.summe] > 1
+            else row
+            for row in rows
+        ]
 
     def export_xlsx(self, turnier_id: int) -> bytes:
         self.get_turnier(turnier_id)

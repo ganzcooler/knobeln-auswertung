@@ -35,6 +35,13 @@
     <aside class="review-queue" aria-label="Prüffälle">
       <div class="queue-head">
         <h2 aria-live="polite">{{ faelle|length }} offene {{ 'Fall' if faelle|length == 1 else 'Fälle' }}</h2>
+        <div class="queue-filter">
+          <a class="secondary-link" href="/pruefen">Alle</a>
+          <a class="secondary-link" href="/pruefen?art=summe">Summe</a>
+          <a class="secondary-link" href="/pruefen?art=wert_ungueltig">Unzulässig</a>
+          <a class="secondary-link" href="/pruefen?art=unklare_ziffer">Unklar</a>
+          <a class="secondary-link" href="/pruefen?art=konflikt">Konflikt</a>
+        </div>
         {% if undo_available %}
           <form method="post" action="/pruefen/undo" class="inline-form">
             <button type="submit" class="secondary">Letzte Korrektur rückgängig</button>
@@ -56,7 +63,7 @@
       </ol>
     </aside>
 
-    <section class="review-detail">
+    <section class="review-detail" aria-live="polite">
       {% if not selected %}
         <div class="empty-state"><h2>Wähle einen Prüffall aus der Queue.</h2></div>
       {% elif selected.art == 'konflikt' %}
@@ -72,11 +79,23 @@
           {% for stored in konflikt_gruppen %}
             <article class="conflict-card">
               <h3>Spieler {{ stored.gruppe.spieler_nr }}{% if stored.gruppe.spieler_name %} · {{ stored.gruppe.spieler_name }}{% endif %}</h3>
-              <p class="muted">Quelle: {{ 'manuell' if stored.quelle == 'manuell' else 'gescannt' }}</p>
+              <p class="muted">Quelle: {{ 'manuell' if stored.quelle == 'manuell' else 'gescannt' }} · Status: {{ stored.gruppe.status_text }}</p>
               <p class="number-lg">{{ stored.gruppe.summe_bogen if stored.gruppe.summe_bogen is not none else '–' }}</p>
               {% if stored.bogen_id %}
                 <a class="secondary-link" href="/bogen/{{ stored.bogen_id }}/scan" target="_blank">Scan ansehen</a>
               {% endif %}
+              <table class="table">
+                <thead><tr><th>Wurf</th><th>Rohwert</th><th>Wert</th></tr></thead>
+                <tbody>
+                  {% for i in range(12) %}
+                    <tr>
+                      <td class="number">{{ i + 1 }}</td>
+                      <td>{{ stored.gruppe.punkte_roh[i] }}</td>
+                      <td class="number">{{ stored.gruppe.punkte[i] if stored.gruppe.punkte[i] is not none else '–' }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
               <form method="post" action="/pruefen/aktion" class="section-gap">
                 <input type="hidden" name="aktion" value="konflikt">
                 <input type="hidden" name="konflikt_id" value="{{ konflikt.id }}">
@@ -135,9 +154,9 @@
           <div class="section-row section-gap">
             <h3>Werte</h3>
             <form method="post" action="/pruefen/aktion" class="inline-form">
-              <input type="hidden" name="aktion" value="bogen_bestaetigen">
-              <input type="hidden" name="bogen_id" value="{{ bogen.id }}">
-              <button type="submit" class="primary">Bogen trotz Abweichung bestätigen</button>
+              <input type="hidden" name="aktion" value="summe_akzeptieren">
+              <input type="hidden" name="gruppe_id" value="{{ selected.gruppe_id }}">
+              <button type="submit" class="primary">Summenabweichung akzeptieren</button>
             </form>
           </div>
           <table class="table">
