@@ -8,8 +8,12 @@ Kontext für die Auswertung gescannter Knobeln-Protokollbögen: handgeschriebene
 Ein gescanntes Knobeln-Protokollblatt; eine Seite mit vier Spielerspalten, zwölf Wurf-Zeilen und einer Summenzeile.
 _Avoid_: Blatt, Formular, Seite
 
+**Turnier**:
+Die Veranstaltung, für die Bögen erfasst und ausgewertet werden; enthält die Durchgänge 1–5 und die Gesamtrangliste.
+_Avoid_: Veranstaltung, Wettbewerb
+
 **Durchgang**:
-Die im Kopf des Bogens eingetragene Runde (1–5). Ein Durchgang kann mehrere Bögen mit je vier Spielern enthalten.
+Ein Abschnitt eines Turniers mit der Nummer 1–5 im Bogenkopf; ein Durchgang kann mehrere Bögen mit je vier Spielern enthalten.
 _Avoid_: Runde, Spielrunde
 
 **Spieler**:
@@ -37,15 +41,19 @@ Die gedruckte Tabelle, die Würfen Punktwerte zuordnet und damit die gültigen P
 _Avoid_: Punktetabelle, Skala
 
 **Eingang**:
-Der Ordner `input`, in den neue Scans gelegt werden. Er enthält nur noch nicht verarbeitete Bögen.
+Der Ordner `input`, aus dem die CLI neue Scans in das Scan-Archiv importiert; er enthält nur noch nicht importierte Bögen.
 _Avoid_: Input, Queue, Warteschlange
+
+**Scan-Archiv**:
+Der dauerhafte lokale Ordner mit den Original-Scans; die Datenbank referenziert die Dateien.
+_Avoid_: Review-Ordner, Upload-Ordner
 
 **Duplikat**:
 Zwei Lesungen desselben Spielers im selben Durchgang mit identischen Punkten. Ein Duplikat wird übersprungen.
 _Avoid_: Konflikt, Doppelung
 
 **Konflikt**:
-Zwei Lesungen desselben Spielers im selben Durchgang mit unterschiedlichen Punkten. Ein Konflikt wird gemeldet, nicht automatisch überschrieben.
+Zwei Erfassungen desselben Spielers im selben Durchgang mit unterschiedlichen Ergebnissen; beide bleiben erhalten, der Mensch entscheidet, welche gilt.
 _Avoid_: Duplikat, Fehler
 
 **Summenzeile**:
@@ -56,9 +64,17 @@ _Avoid_: Gesamtsumme, Endsumme
 Die von der App aus den gelesenen Punkten berechnete Summe pro Spieler und Bogen.
 _Avoid_: Ergebnis, Berechnung
 
+**Durchgangsergebnis**:
+Die Summe eines Spielers in einem Durchgang; sie wird aus einem gescannten Bogen berechnet oder bei fehlender Extraktion manuell erfasst und bleibt als solche gekennzeichnet.
+_Avoid_: Summe, Endsumme
+
 **Warnung**:
-Kennzeichnung einer Abweichung oder Unsicherheit in der CSV; führt nicht zu einer automatischen Korrektur der Summe.
+Kennzeichnung einer Abweichung oder Unsicherheit in der Auswertung; führt nicht zu einer automatischen Korrektur der Summe.
 _Avoid_: Fehler, Meldung
+
+**Prüffall**:
+Ein aus den Status-Codes abgeleiteter offener Punkt eines Bogens, den ein Mensch entscheiden muss; keine eigene Wahrheit neben den Zellwerten.
+_Avoid_: Fehler, Issue
 
 **Korrektur**:
 Die domänenkonstante Ersetzung eines ungültigen Zellwerts durch einen Wert aus der Wertung, z. B. `8.5` → 85; wird immer als Warnung markiert. Ist der bereinigte Wert nicht in der Wertung, bleibt die Zelle leer.
