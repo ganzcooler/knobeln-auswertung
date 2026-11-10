@@ -1,0 +1,5 @@
+START img1.jpg low rep 1
+DONE img1.jpg low rep 1 12.4 s {'prompt_tokens': 1827, 'completion_tokens': 4027, 'reasoning_tokens': 2268, 'cost_usd': 0.001744247}
+START img1.jpg low rep 2
+DONE img1.jpg low rep 2 15.0 s {'prompt_tokens': 1825, 'completion_tokens': 8255, 'reasoning_tokens': 4286, 'cost_usd': 0.0034776250000000002}
+ALL DONE img1.jpg

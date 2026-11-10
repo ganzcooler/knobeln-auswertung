@@ -15,7 +15,7 @@ from .store import SQLiteStore
 DEFAULT_DB = Path("knobeln.db")
 DEFAULT_SCANS = Path("data/scans")
 DEFAULT_MODEL = "deepseek/deepseek-v4.1-flash"
-DEFAULT_REASONING = "medium"
+DEFAULT_REASONING = "low"
 
 
 def build_service(

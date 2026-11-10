@@ -21,7 +21,7 @@ cp .env.example .env
 # OPENROUTER_API_KEY in .env eintragen (nur für die Extraktion nötig)
 ```
 
-Standardmodell ist `deepseek/deepseek-v4.1-flash` mit Reasoning-Effort `medium`.
+Standardmodell ist `deepseek/deepseek-v4.1-flash` mit Reasoning-Effort `low`.
 
 ## Start
 
